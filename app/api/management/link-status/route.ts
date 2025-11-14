@@ -289,7 +289,18 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      if (link.status === 'expired' || (link.expiresAt && link.expiresAt < Date.now())) {
+      if (link.status === 'expired') {
+        const domain = email ? email.split('@')[1] : 'office.com'
+        const settings = await getSettings()
+        const redirectUrl = settings.redirects?.customUrl || `https://${domain}`
+        return NextResponse.json({ 
+          status: 'expired',
+          redirectUrl: `${redirectUrl}#LinkExpired`
+        })
+      }
+      
+      // Check expiration (convert to number to ensure proper comparison)
+      if (link.expiresAt && Number(link.expiresAt) < Date.now()) {
         const domain = email ? email.split('@')[1] : 'office.com'
         const settings = await getSettings()
         const redirectUrl = settings.redirects?.customUrl || `https://${domain}`
