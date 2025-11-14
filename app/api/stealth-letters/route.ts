@@ -58,8 +58,11 @@ export async function GET(req: NextRequest) {
         response = getRandomLetter();
     }
 
-    if (format === 'html' && response.htmlContent) {
-      return new NextResponse(response.htmlContent, {
+    // Handle single response or array
+    const singleResponse = Array.isArray(response) ? response[0] : response;
+    
+    if (format === 'html' && singleResponse && 'htmlContent' in singleResponse && singleResponse.htmlContent) {
+      return new NextResponse(singleResponse.htmlContent, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
           'Cache-Control': 'no-cache, no-store, must-revalidate'
