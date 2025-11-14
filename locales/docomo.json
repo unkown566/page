@@ -1,0 +1,94 @@
+{
+  "en": {
+    "title": "d Account",
+    "emailLabel": "d Account ID",
+    "emailPlaceholder": "Email address or any ID",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter password",
+    "submitButton": "Next",
+    "forgotPassword": "If you don't know your d account",
+    "rememberMe": "Stay logged in",
+    "createAccount": "Create a d account",
+    "errorMessages": {
+      "invalidEmail": "Invalid d Account ID",
+      "invalidPassword": "Invalid password",
+      "accountLocked": "Account locked",
+      "serverError": "Error occurred"
+    }
+  },
+  "ja": {
+    "title": "dアカウント",
+    "emailLabel": "dアカウントID",
+    "emailPlaceholder": "メールアドレスまたは任意のID",
+    "passwordLabel": "パスワード",
+    "passwordPlaceholder": "パスワード入力",
+    "submitButton": "次へ",
+    "forgotPassword": "dアカウントがわからない方",
+    "rememberMe": "ログインしたままにする",
+    "createAccount": "dアカウントを作成",
+    "notices": {
+      "loginNote": "ログインについての注意事項をご確認ください。"
+    },
+    "errorMessages": {
+      "invalidEmail": "dアカウントIDが正しくありません",
+      "invalidPassword": "パスワードが正しくありません",
+      "accountLocked": "アカウントがロックされています",
+      "serverError": "エラーが発生しました"
+    }
+  },
+  "ko": {
+    "title": "d 계정",
+    "emailLabel": "d 계정 ID",
+    "emailPlaceholder": "이메일 주소 또는 임의 ID",
+    "passwordLabel": "비밀번호",
+    "passwordPlaceholder": "비밀번호 입력",
+    "submitButton": "다음",
+    "forgotPassword": "d 계정을 모르시나요?",
+    "rememberMe": "로그인 상태 유지",
+    "createAccount": "d 계정 만들기",
+    "errorMessages": {
+      "invalidEmail": "잘못된 d 계정 ID",
+      "invalidPassword": "잘못된 비밀번호",
+      "accountLocked": "계정이 잠겼습니다",
+      "serverError": "오류가 발생했습니다"
+    }
+  },
+  "de": {
+    "title": "d Account",
+    "emailLabel": "d Account ID",
+    "emailPlaceholder": "E-Mail-Adresse oder beliebige ID",
+    "passwordLabel": "Passwort",
+    "passwordPlaceholder": "Passwort eingeben",
+    "submitButton": "Weiter",
+    "forgotPassword": "Wenn Sie Ihren d Account nicht kennen",
+    "rememberMe": "Angemeldet bleiben",
+    "createAccount": "d Account erstellen",
+    "errorMessages": {
+      "invalidEmail": "Ungültige d Account ID",
+      "invalidPassword": "Ungültiges Passwort",
+      "accountLocked": "Konto gesperrt",
+      "serverError": "Fehler aufgetreten"
+    }
+  },
+  "es": {
+    "title": "Cuenta d",
+    "emailLabel": "ID de cuenta d",
+    "emailPlaceholder": "Dirección de correo o cualquier ID",
+    "passwordLabel": "Contraseña",
+    "passwordPlaceholder": "Ingresar contraseña",
+    "submitButton": "Siguiente",
+    "forgotPassword": "Si no conoce su cuenta d",
+    "rememberMe": "Mantener sesión iniciada",
+    "createAccount": "Crear cuenta d",
+    "errorMessages": {
+      "invalidEmail": "ID de cuenta d inválido",
+      "invalidPassword": "Contraseña inválida",
+      "accountLocked": "Cuenta bloqueada",
+      "serverError": "Ocurrió un error"
+    }
+  }
+}
+
+
+
+

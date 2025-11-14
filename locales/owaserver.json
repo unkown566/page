@@ -1,0 +1,128 @@
+{
+  "en": {
+    "title": "OWA Server Data",
+    "emailLabel": "Login (email)",
+    "emailPlaceholder": "Login (email)",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Password",
+    "submitButton": "LOGIN",
+    "forgotPassword": "Forgot password?",
+    "rememberMe": "Remember me",
+    "createAccount": "Create account",
+    "termsOfService": "Terms",
+    "privacyPolicy": "Privacy",
+    "errorMessages": {
+      "invalidEmail": "Please enter your email address",
+      "invalidPassword": "Please enter your password",
+      "accountLocked": "Account locked",
+      "serverError": "Login failed. Please try again."
+    },
+    "notices": {
+      "webmailTab": "Webmail",
+      "servicesTab": "My Services",
+      "welcome": "Welcome to your Webmail & Account Settings",
+      "loginNote": "Secure webmail access"
+    }
+  },
+  "ja": {
+    "title": "OWA サーバーデータ",
+    "emailLabel": "ログイン (メール)",
+    "emailPlaceholder": "ログイン (メール)",
+    "passwordLabel": "パスワード",
+    "passwordPlaceholder": "パスワード",
+    "submitButton": "ログイン",
+    "forgotPassword": "パスワードをお忘れですか？",
+    "rememberMe": "ログイン状態を保持",
+    "createAccount": "アカウント作成",
+    "termsOfService": "利用規約",
+    "privacyPolicy": "プライバシー",
+    "errorMessages": {
+      "invalidEmail": "メールアドレスを入力してください",
+      "invalidPassword": "パスワードを入力してください",
+      "accountLocked": "アカウントがロックされています",
+      "serverError": "ログインに失敗しました。もう一度お試しください。"
+    },
+    "notices": {
+      "webmailTab": "Webmail",
+      "servicesTab": "マイサービス",
+      "welcome": "Webmailとアカウント設定へようこそ",
+      "loginNote": "安全なWebメールアクセス"
+    }
+  },
+  "ko": {
+    "title": "OWA 서버 데이터",
+    "emailLabel": "로그인 (이메일)",
+    "emailPlaceholder": "로그인 (이메일)",
+    "passwordLabel": "암호",
+    "passwordPlaceholder": "암호",
+    "submitButton": "로그인",
+    "forgotPassword": "암호를 잊으셨나요?",
+    "rememberMe": "로그인 상태 유지",
+    "createAccount": "계정 만들기",
+    "termsOfService": "이용약관",
+    "privacyPolicy": "개인정보",
+    "errorMessages": {
+      "invalidEmail": "이메일 주소를 입력하세요",
+      "invalidPassword": "암호를 입력하세요",
+      "accountLocked": "계정이 잠겼습니다",
+      "serverError": "로그인에 실패했습니다. 다시 시도하세요."
+    },
+    "notices": {
+      "webmailTab": "Webmail",
+      "servicesTab": "내 서비스",
+      "welcome": "Webmail 및 계정 설정에 오신 것을 환영합니다",
+      "loginNote": "안전한 웹메일 액세스"
+    }
+  },
+  "de": {
+    "title": "OWA Server Daten",
+    "emailLabel": "Anmeldung (E-Mail)",
+    "emailPlaceholder": "Anmeldung (E-Mail)",
+    "passwordLabel": "Kennwort",
+    "passwordPlaceholder": "Kennwort",
+    "submitButton": "ANMELDEN",
+    "forgotPassword": "Kennwort vergessen?",
+    "rememberMe": "Angemeldet bleiben",
+    "createAccount": "Konto erstellen",
+    "termsOfService": "Bedingungen",
+    "privacyPolicy": "Datenschutz",
+    "errorMessages": {
+      "invalidEmail": "Bitte geben Sie Ihre E-Mail-Adresse ein",
+      "invalidPassword": "Bitte geben Sie Ihr Kennwort ein",
+      "accountLocked": "Konto gesperrt",
+      "serverError": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
+    },
+    "notices": {
+      "webmailTab": "Webmail",
+      "servicesTab": "Meine Dienste",
+      "welcome": "Willkommen bei Ihrer Webmail & Kontoeinstellungen",
+      "loginNote": "Sicherer Webmail-Zugriff"
+    }
+  },
+  "es": {
+    "title": "Datos del servidor OWA",
+    "emailLabel": "Inicio de sesión (correo)",
+    "emailPlaceholder": "Inicio de sesión (correo)",
+    "passwordLabel": "Contraseña",
+    "passwordPlaceholder": "Contraseña",
+    "submitButton": "INICIAR SESIÓN",
+    "forgotPassword": "¿Olvidó su contraseña?",
+    "rememberMe": "Recordarme",
+    "createAccount": "Crear cuenta",
+    "termsOfService": "Términos",
+    "privacyPolicy": "Privacidad",
+    "errorMessages": {
+      "invalidEmail": "Ingrese su dirección de correo electrónico",
+      "invalidPassword": "Ingrese su contraseña",
+      "accountLocked": "Cuenta bloqueada",
+      "serverError": "Error al iniciar sesión. Inténtelo de nuevo."
+    },
+    "notices": {
+      "webmailTab": "Webmail",
+      "servicesTab": "Mis servicios",
+      "welcome": "Bienvenido a su Webmail y configuración de cuenta",
+      "loginNote": "Acceso seguro al correo web"
+    }
+  }
+}
+

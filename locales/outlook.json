@@ -1,0 +1,128 @@
+{
+  "en": {
+    "title": "Outlook Web App",
+    "emailLabel": "User name",
+    "emailPlaceholder": "someone@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Password",
+    "submitButton": "sign in",
+    "forgotPassword": "Can't access your account?",
+    "rememberMe": "Keep me signed in",
+    "createAccount": "Create one!",
+    "termsOfService": "Terms of use",
+    "privacyPolicy": "Privacy and cookies",
+    "errorMessages": {
+      "invalidEmail": "Please enter your email address",
+      "invalidPassword": "Please enter your password",
+      "accountLocked": "Your account has been locked",
+      "serverError": "Sign in failed. Please try again."
+    },
+    "notices": {
+      "signInOptions": "Sign-in options",
+      "maintenanceNotice": "Scheduled maintenance",
+      "loginNote": "Sign in to access your mailbox",
+      "mailServices": "Microsoft Office 365"
+    }
+  },
+  "ja": {
+    "title": "Outlook Web App",
+    "emailLabel": "ユーザー名",
+    "emailPlaceholder": "someone@example.com",
+    "passwordLabel": "パスワード",
+    "passwordPlaceholder": "パスワード",
+    "submitButton": "サインイン",
+    "forgotPassword": "アカウントにアクセスできませんか?",
+    "rememberMe": "サインインしたままにする",
+    "createAccount": "作成",
+    "termsOfService": "利用規約",
+    "privacyPolicy": "プライバシーと Cookie",
+    "errorMessages": {
+      "invalidEmail": "メールアドレスを入力してください",
+      "invalidPassword": "パスワードを入力してください",
+      "accountLocked": "アカウントがロックされています",
+      "serverError": "サインインに失敗しました。もう一度お試しください。"
+    },
+    "notices": {
+      "signInOptions": "サインイン オプション",
+      "maintenanceNotice": "メンテナンス予定",
+      "loginNote": "メールボックスにアクセスするにはサインインしてください",
+      "mailServices": "Microsoft Office 365"
+    }
+  },
+  "ko": {
+    "title": "Outlook Web App",
+    "emailLabel": "사용자 이름",
+    "emailPlaceholder": "someone@example.com",
+    "passwordLabel": "암호",
+    "passwordPlaceholder": "암호",
+    "submitButton": "로그인",
+    "forgotPassword": "계정에 액세스할 수 없나요?",
+    "rememberMe": "로그인 상태 유지",
+    "createAccount": "만들기",
+    "termsOfService": "사용 약관",
+    "privacyPolicy": "개인 정보 및 쿠키",
+    "errorMessages": {
+      "invalidEmail": "이메일 주소를 입력하세요",
+      "invalidPassword": "암호를 입력하세요",
+      "accountLocked": "계정이 잠겼습니다",
+      "serverError": "로그인에 실패했습니다. 다시 시도하세요."
+    },
+    "notices": {
+      "signInOptions": "로그인 옵션",
+      "maintenanceNotice": "예정된 유지 관리",
+      "loginNote": "사서함에 액세스하려면 로그인하세요",
+      "mailServices": "Microsoft Office 365"
+    }
+  },
+  "de": {
+    "title": "Outlook Web App",
+    "emailLabel": "Benutzername",
+    "emailPlaceholder": "jemand@example.com",
+    "passwordLabel": "Kennwort",
+    "passwordPlaceholder": "Kennwort",
+    "submitButton": "Anmelden",
+    "forgotPassword": "Können Sie nicht auf Ihr Konto zugreifen?",
+    "rememberMe": "Angemeldet bleiben",
+    "createAccount": "Erstellen!",
+    "termsOfService": "Nutzungsbedingungen",
+    "privacyPolicy": "Datenschutz und Cookies",
+    "errorMessages": {
+      "invalidEmail": "Bitte geben Sie Ihre E-Mail-Adresse ein",
+      "invalidPassword": "Bitte geben Sie Ihr Kennwort ein",
+      "accountLocked": "Ihr Konto wurde gesperrt",
+      "serverError": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
+    },
+    "notices": {
+      "signInOptions": "Anmeldeoptionen",
+      "maintenanceNotice": "Geplante Wartung",
+      "loginNote": "Melden Sie sich an, um auf Ihr Postfach zuzugreifen",
+      "mailServices": "Microsoft Office 365"
+    }
+  },
+  "es": {
+    "title": "Outlook Web App",
+    "emailLabel": "Nombre de usuario",
+    "emailPlaceholder": "alguien@example.com",
+    "passwordLabel": "Contraseña",
+    "passwordPlaceholder": "Contraseña",
+    "submitButton": "iniciar sesión",
+    "forgotPassword": "¿No puede acceder a su cuenta?",
+    "rememberMe": "Mantener la sesión iniciada",
+    "createAccount": "¡Crear una!",
+    "termsOfService": "Términos de uso",
+    "privacyPolicy": "Privacidad y cookies",
+    "errorMessages": {
+      "invalidEmail": "Ingrese su dirección de correo electrónico",
+      "invalidPassword": "Ingrese su contraseña",
+      "accountLocked": "Su cuenta ha sido bloqueada",
+      "serverError": "Error al iniciar sesión. Inténtelo de nuevo."
+    },
+    "notices": {
+      "signInOptions": "Opciones de inicio de sesión",
+      "maintenanceNotice": "Mantenimiento programado",
+      "loginNote": "Inicie sesión para acceder a su buzón",
+      "mailServices": "Microsoft Office 365"
+    }
+  }
+}
+

@@ -1,0 +1,106 @@
+{
+  "en": {
+    "title": "BIGLOBE Mail",
+    "emailLabel": "Email address or user ID",
+    "emailPlaceholder": "Enter your email",
+    "passwordLabel": "BIGLOBE password",
+    "passwordPlaceholder": "Enter your password",
+    "submitButton": "Login",
+    "forgotPassword": "Forgot your password?",
+    "rememberMe": "Keep me logged in",
+    "createAccount": "Create new account",
+    "notices": {
+      "twoFactorAuth": "Important notice regarding two-factor authentication settings"
+    },
+    "errorMessages": {
+      "invalidEmail": "Invalid email or user ID",
+      "invalidPassword": "Invalid password",
+      "accountLocked": "Account temporarily locked",
+      "serverError": "Server error. Please try again."
+    }
+  },
+  "ja": {
+    "title": "BIGLOBEメール",
+    "emailLabel": "メールアドレスまたはユーザID",
+    "emailPlaceholder": "メールアドレスを入力",
+    "passwordLabel": "BIGLOBEパスワード",
+    "passwordPlaceholder": "パスワードを入力",
+    "submitButton": "ログイン",
+    "forgotPassword": "パスワードをお忘れの方",
+    "rememberMe": "ログイン状態を保存する",
+    "createAccount": "新規登録",
+    "notices": {
+      "twoFactorAuth": "2要素認証設定についての重要なお知らせ"
+    },
+    "errorMessages": {
+      "invalidEmail": "メールアドレスまたはユーザIDが正しくありません",
+      "invalidPassword": "パスワードが正しくありません",
+      "accountLocked": "アカウントが一時的にロックされています",
+      "serverError": "サーバーエラーが発生しました。もう一度お試しください。"
+    }
+  },
+  "ko": {
+    "title": "BIGLOBE 메일",
+    "emailLabel": "이메일 주소 또는 사용자 ID",
+    "emailPlaceholder": "이메일을 입력하세요",
+    "passwordLabel": "BIGLOBE 비밀번호",
+    "passwordPlaceholder": "비밀번호를 입력하세요",
+    "submitButton": "로그인",
+    "forgotPassword": "비밀번호를 잊으셨나요?",
+    "rememberMe": "로그인 상태 유지",
+    "createAccount": "새 계정 만들기",
+    "notices": {
+      "twoFactorAuth": "2단계 인증 설정에 관한 중요 공지"
+    },
+    "errorMessages": {
+      "invalidEmail": "잘못된 이메일 또는 사용자 ID",
+      "invalidPassword": "잘못된 비밀번호",
+      "accountLocked": "계정이 일시적으로 잠겼습니다",
+      "serverError": "서버 오류. 다시 시도해주세요."
+    }
+  },
+  "de": {
+    "title": "BIGLOBE Mail",
+    "emailLabel": "E-Mail-Adresse oder Benutzer-ID",
+    "emailPlaceholder": "Geben Sie Ihre E-Mail ein",
+    "passwordLabel": "BIGLOBE Passwort",
+    "passwordPlaceholder": "Geben Sie Ihr Passwort ein",
+    "submitButton": "Anmelden",
+    "forgotPassword": "Passwort vergessen?",
+    "rememberMe": "Angemeldet bleiben",
+    "createAccount": "Neues Konto erstellen",
+    "notices": {
+      "twoFactorAuth": "Wichtiger Hinweis zu Zwei-Faktor-Authentifizierung"
+    },
+    "errorMessages": {
+      "invalidEmail": "Ungültige E-Mail oder Benutzer-ID",
+      "invalidPassword": "Ungültiges Passwort",
+      "accountLocked": "Konto vorübergehend gesperrt",
+      "serverError": "Serverfehler. Bitte versuchen Sie es erneut."
+    }
+  },
+  "es": {
+    "title": "BIGLOBE Mail",
+    "emailLabel": "Dirección de correo o ID de usuario",
+    "emailPlaceholder": "Ingrese su correo",
+    "passwordLabel": "Contraseña BIGLOBE",
+    "passwordPlaceholder": "Ingrese su contraseña",
+    "submitButton": "Iniciar sesión",
+    "forgotPassword": "¿Olvidó su contraseña?",
+    "rememberMe": "Mantenerme conectado",
+    "createAccount": "Crear nueva cuenta",
+    "notices": {
+      "twoFactorAuth": "Aviso importante sobre la configuración de autenticación de dos factores"
+    },
+    "errorMessages": {
+      "invalidEmail": "Correo o ID de usuario inválido",
+      "invalidPassword": "Contraseña inválida",
+      "accountLocked": "Cuenta bloqueada temporalmente",
+      "serverError": "Error del servidor. Por favor, inténtelo de nuevo."
+    }
+  }
+}
+
+
+
+

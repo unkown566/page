@@ -1,0 +1,101 @@
+{
+  "en": {
+    "title": "@nifty Mail",
+    "emailLabel": "@nifty ID or @nifty username",
+    "emailPlaceholder": "Enter your ID",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter password",
+    "submitButton": "Enter your password",
+    "forgotPassword": "If you don't know your @nifty ID or @nifty username",
+    "rememberMe": "Stay logged in (uncheck this if using a shared computer)",
+    "notices": {
+      "mailServices": "Other @nifty mail services are available here"
+    },
+    "errorMessages": {
+      "invalidEmail": "Invalid @nifty ID",
+      "invalidPassword": "Invalid password",
+      "accountLocked": "Account locked",
+      "serverError": "Error occurred"
+    }
+  },
+  "ja": {
+    "title": "@niftyメール",
+    "emailLabel": "@nifty IDまたは@niftyユーザー名",
+    "emailPlaceholder": "IDを入力",
+    "passwordLabel": "パスワード",
+    "passwordPlaceholder": "パスワード入力",
+    "submitButton": "パスワード入力へ",
+    "forgotPassword": "@nifty IDまたは@niftyユーザー名がわからない場合",
+    "rememberMe": "ログインしたままにする（共用のパソコンではチェックを外してください）",
+    "notices": {
+      "mailServices": "@niftyメールの他サービスはこちら"
+    },
+    "errorMessages": {
+      "invalidEmail": "@nifty IDが正しくありません",
+      "invalidPassword": "パスワードが正しくありません",
+      "accountLocked": "アカウントがロックされています",
+      "serverError": "エラーが発生しました"
+    }
+  },
+  "ko": {
+    "title": "@nifty 메일",
+    "emailLabel": "@nifty ID 또는 @nifty 사용자 이름",
+    "emailPlaceholder": "ID를 입력하세요",
+    "passwordLabel": "비밀번호",
+    "passwordPlaceholder": "비밀번호 입력",
+    "submitButton": "비밀번호 입력하기",
+    "forgotPassword": "@nifty ID 또는 @nifty 사용자 이름을 모르시나요?",
+    "rememberMe": "로그인 상태 유지 (공용 컴퓨터에서는 체크 해제하세요)",
+    "notices": {
+      "mailServices": "기타 @nifty 메일 서비스는 여기"
+    },
+    "errorMessages": {
+      "invalidEmail": "잘못된 @nifty ID",
+      "invalidPassword": "잘못된 비밀번호",
+      "accountLocked": "계정이 잠겼습니다",
+      "serverError": "오류가 발생했습니다"
+    }
+  },
+  "de": {
+    "title": "@nifty Mail",
+    "emailLabel": "@nifty ID oder @nifty Benutzername",
+    "emailPlaceholder": "Geben Sie Ihre ID ein",
+    "passwordLabel": "Passwort",
+    "passwordPlaceholder": "Passwort eingeben",
+    "submitButton": "Passwort eingeben",
+    "forgotPassword": "Wenn Sie Ihre @nifty ID oder @nifty Benutzername nicht kennen",
+    "rememberMe": "Angemeldet bleiben (deaktivieren Sie dies bei Verwendung eines gemeinsam genutzten Computers)",
+    "notices": {
+      "mailServices": "Andere @nifty Mail-Dienste sind hier verfügbar"
+    },
+    "errorMessages": {
+      "invalidEmail": "Ungültige @nifty ID",
+      "invalidPassword": "Ungültiges Passwort",
+      "accountLocked": "Konto gesperrt",
+      "serverError": "Fehler aufgetreten"
+    }
+  },
+  "es": {
+    "title": "@nifty Mail",
+    "emailLabel": "ID de @nifty o nombre de usuario de @nifty",
+    "emailPlaceholder": "Ingrese su ID",
+    "passwordLabel": "Contraseña",
+    "passwordPlaceholder": "Ingresar contraseña",
+    "submitButton": "Ingresar contraseña",
+    "forgotPassword": "Si no conoce su ID de @nifty o nombre de usuario de @nifty",
+    "rememberMe": "Mantener sesión iniciada (desmarque esto si usa una computadora compartida)",
+    "notices": {
+      "mailServices": "Otros servicios de correo de @nifty están disponibles aquí"
+    },
+    "errorMessages": {
+      "invalidEmail": "ID de @nifty inválido",
+      "invalidPassword": "Contraseña inválida",
+      "accountLocked": "Cuenta bloqueada",
+      "serverError": "Ocurrió un error"
+    }
+  }
+}
+
+
+
+

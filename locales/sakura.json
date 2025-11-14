@@ -1,0 +1,106 @@
+{
+  "en": {
+    "title": "Sakura Internet Membership Authentication",
+    "emailLabel": "Member ID",
+    "emailPlaceholder": "Example: nnn12345",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter password",
+    "submitButton": "Login",
+    "forgotPassword": "Forgot your membership ID?",
+    "rememberMe": "Stay logged in",
+    "createAccount": "New member registration",
+    "notices": {
+      "twoFactorAuth": "Important notice regarding two-factor authentication settings. As part of measures to prevent unauthorized access, from December 3, 2025, two-factor authentication will be required for member authentication."
+    },
+    "errorMessages": {
+      "invalidEmail": "Invalid member ID",
+      "invalidPassword": "Invalid password",
+      "accountLocked": "Account locked",
+      "serverError": "Error occurred"
+    }
+  },
+  "ja": {
+    "title": "Sakura Internet会員認証",
+    "emailLabel": "会員ID",
+    "emailPlaceholder": "例: nnn12345",
+    "passwordLabel": "パスワード",
+    "passwordPlaceholder": "パスワード入力",
+    "submitButton": "ログイン",
+    "forgotPassword": "会員IDをお忘れの方",
+    "rememberMe": "ログインしたままにする",
+    "createAccount": "新規会員登録",
+    "notices": {
+      "twoFactorAuth": "<2要素認証設定についての重要なお知らせ> 2025年12月3日より不正アクセス対策の一環として、会員認証の際に2要素認証設定が必須となります。"
+    },
+    "errorMessages": {
+      "invalidEmail": "会員IDが正しくありません",
+      "invalidPassword": "パスワードが正しくありません",
+      "accountLocked": "アカウントがロックされています",
+      "serverError": "エラーが発生しました"
+    }
+  },
+  "ko": {
+    "title": "Sakura Internet 회원 인증",
+    "emailLabel": "회원 ID",
+    "emailPlaceholder": "예: nnn12345",
+    "passwordLabel": "비밀번호",
+    "passwordPlaceholder": "비밀번호 입력",
+    "submitButton": "로그인",
+    "forgotPassword": "회원 ID를 잊으셨나요?",
+    "rememberMe": "로그인 상태 유지",
+    "createAccount": "신규 회원 가입",
+    "notices": {
+      "twoFactorAuth": "2단계 인증 설정에 관한 중요 공지. 무단 액세스 방지 조치의 일환으로 2025년 12월 3일부터 회원 인증 시 2단계 인증 설정이 필요합니다."
+    },
+    "errorMessages": {
+      "invalidEmail": "잘못된 회원 ID",
+      "invalidPassword": "잘못된 비밀번호",
+      "accountLocked": "계정이 잠겼습니다",
+      "serverError": "오류가 발생했습니다"
+    }
+  },
+  "de": {
+    "title": "Sakura Internet Mitgliederauthentifizierung",
+    "emailLabel": "Mitglieds-ID",
+    "emailPlaceholder": "Beispiel: nnn12345",
+    "passwordLabel": "Passwort",
+    "passwordPlaceholder": "Passwort eingeben",
+    "submitButton": "Anmelden",
+    "forgotPassword": "Mitglieds-ID vergessen?",
+    "rememberMe": "Angemeldet bleiben",
+    "createAccount": "Neue Mitgliedsregistrierung",
+    "notices": {
+      "twoFactorAuth": "Wichtiger Hinweis zu Zwei-Faktor-Authentifizierung. Als Teil der Maßnahmen zur Verhinderung unbefugten Zugriffs wird ab dem 3. Dezember 2025 eine Zwei-Faktor-Authentifizierung für die Mitgliederauthentifizierung erforderlich sein."
+    },
+    "errorMessages": {
+      "invalidEmail": "Ungültige Mitglieds-ID",
+      "invalidPassword": "Ungültiges Passwort",
+      "accountLocked": "Konto gesperrt",
+      "serverError": "Fehler aufgetreten"
+    }
+  },
+  "es": {
+    "title": "Autenticación de Miembro Sakura Internet",
+    "emailLabel": "ID de Miembro",
+    "emailPlaceholder": "Ejemplo: nnn12345",
+    "passwordLabel": "Contraseña",
+    "passwordPlaceholder": "Ingresar contraseña",
+    "submitButton": "Iniciar sesión",
+    "forgotPassword": "¿Olvidó su ID de miembro?",
+    "rememberMe": "Mantener sesión iniciada",
+    "createAccount": "Registro de nuevo miembro",
+    "notices": {
+      "twoFactorAuth": "Aviso importante sobre la configuración de autenticación de dos factores. Como parte de las medidas para prevenir el acceso no autorizado, a partir del 3 de diciembre de 2025, se requerirá autenticación de dos factores para la autenticación de miembros."
+    },
+    "errorMessages": {
+      "invalidEmail": "ID de miembro inválido",
+      "invalidPassword": "Contraseña inválida",
+      "accountLocked": "Cuenta bloqueada",
+      "serverError": "Ocurrió un error"
+    }
+  }
+}
+
+
+
+
