@@ -25,7 +25,7 @@ import { createToken } from './tokens'
 export async function createPersonalizedLink(
   email: string,
   documentId?: string,
-  expirationHours: number = 24,
+  expirationHours: number = 168,  // Changed from 24 (1 day) to 168 (7 days)
   templateId?: string,
   templateMode?: 'auto' | 'manual' | 'rotate',
   loadingScreen?: string,
@@ -120,7 +120,7 @@ export async function saveEmailIdMapping(id: string, email: string): Promise<voi
 export async function createGenericLink(
   name: string,
   allowedEmails: string[],
-  expirationDays: number = 7,
+  expirationDays: number = 365,  // Changed from 7 days to 365 (1 year)
   templateId?: string
 ): Promise<{
   url: string
