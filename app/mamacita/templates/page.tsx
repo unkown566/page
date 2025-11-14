@@ -120,7 +120,7 @@ export default function TemplatesPage() {
         {/* Back Button & Breadcrumb */}
         <div className="flex items-center gap-2 mb-4">
           <Link 
-            href="/admin"
+            href="/mamacita"
             className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
           >
             <span>←</span>
@@ -144,7 +144,7 @@ export default function TemplatesPage() {
           </div>
           
           <Link
-            href="/admin/templates/create"
+            href="/mamacita/templates/create"
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             + Create Template
@@ -323,7 +323,7 @@ export default function TemplatesPage() {
                   )}
                   
                   <Link
-                    href={`/admin/templates/edit/${template.id}`}
+                    href={`/mamacita/templates/edit/${template.id}`}
                     className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
                   >
                     ✏️
@@ -364,7 +364,7 @@ export default function TemplatesPage() {
               Create your first template to get started
             </p>
             <Link
-              href="/admin/templates/create"
+              href="/mamacita/templates/create"
               className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Create Template

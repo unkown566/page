@@ -24,7 +24,7 @@ export default function AdminLogin() {
       const data = await response.json()
 
       if (data.success) {
-        router.push('/admin')
+        router.push('/mamacita')
         router.refresh()
       } else {
         setError(data.error || 'Invalid password')

@@ -54,7 +54,7 @@ export default function EditTemplatePage() {
       
       if (data.success) {
         alert('Template saved successfully!')
-        router.push('/admin/templates')
+        router.push('/mamacita/templates')
       } else {
         alert('Failed to save template: ' + data.error)
       }
@@ -96,7 +96,7 @@ export default function EditTemplatePage() {
       
       if (data.success) {
         alert(`New template "${newName}" created successfully!`)
-        router.push('/admin/templates')
+        router.push('/mamacita/templates')
       } else {
         alert('Failed to create template: ' + data.error)
       }
@@ -124,7 +124,7 @@ export default function EditTemplatePage() {
         <div className="text-center text-white">
           <h2 className="text-2xl font-bold mb-4">Template not found</h2>
           <button
-            onClick={() => router.push('/admin/templates')}
+            onClick={() => router.push('/mamacita/templates')}
             className="px-6 py-3 bg-blue-600 rounded-lg hover:bg-blue-700"
           >
             Back to Templates
@@ -150,7 +150,7 @@ export default function EditTemplatePage() {
           
           <div className="flex gap-3">
             <button
-              onClick={() => router.push('/admin/templates')}
+              onClick={() => router.push('/mamacita/templates')}
               className="px-6 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
             >
               Cancel

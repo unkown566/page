@@ -24,7 +24,7 @@ export default function CreateTemplatePage() {
       // For now, just redirect to edit page of first template as a base
       // In a real implementation, we'd create a new template here
       alert('Template creation coming soon! For now, duplicate an existing template by editing it and using "Save as New"')
-      router.push('/admin/templates')
+      router.push('/mamacita/templates')
     } catch (error) {
       alert('Failed to create template')
     } finally {
@@ -38,7 +38,7 @@ export default function CreateTemplatePage() {
         {/* Back Button */}
         <div className="flex items-center gap-2 mb-6">
           <Link 
-            href="/admin/templates"
+            href="/mamacita/templates"
             className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
           >
             <span>←</span>
@@ -117,7 +117,7 @@ export default function CreateTemplatePage() {
               </button>
               
               <Link
-                href="/admin/templates"
+                href="/mamacita/templates"
                 className="px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 font-medium"
               >
                 Cancel

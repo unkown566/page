@@ -58,7 +58,7 @@ export default function PatternsPage() {
           <p className="text-gray-600 dark:text-gray-400">
             View built-in patterns for detecting email security vendor sandboxes.{' '}
             Configure detection in{' '}
-            <Link href="/admin/settings" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline">
+            <Link href="/mamacita/settings" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline">
               Settings
             </Link>.
           </p>
@@ -73,7 +73,7 @@ export default function PatternsPage() {
               <div className="text-blue-700 dark:text-blue-300">
                 These detection patterns are built into the codebase. To enable or disable 
                 sandbox detection, use the{' '}
-                <Link href="/admin/settings" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline">
+                <Link href="/mamacita/settings" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline">
                   Settings page
                 </Link>.
                 Pattern updates are included with software releases.
