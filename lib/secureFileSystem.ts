@@ -64,22 +64,30 @@ export async function secureWriteJSON(filePath: string, data: any): Promise<void
   try {
     // Create directory if it doesn't exist
     const dir = path.dirname(filePath)
+    console.log('[FILE I/O] 📁 Creating directory:', dir)
     await fs.mkdir(dir, { recursive: true, mode: 0o700 })
     
     // Write to temporary file first (atomic operation)
     const tempPath = `${filePath}.tmp.${crypto.randomBytes(8).toString('hex')}`
+    console.log('[FILE I/O] ✍️  Writing to temp file:', tempPath)
+    console.log('[FILE I/O] 📊 Data size:', JSON.stringify(data).length, 'bytes')
     await fs.writeFile(tempPath, JSON.stringify(data, null, 2), {
       encoding: 'utf-8',
       mode: SECURE_FILE_MODE
     })
+    console.log('[FILE I/O] ✅ Temp file written')
     
     // Atomic rename
+    console.log('[FILE I/O] 🔄 Renaming:', tempPath, '→', filePath)
     await fs.rename(tempPath, filePath)
+    console.log('[FILE I/O] ✅ File renamed successfully')
     
     // Ensure permissions are correct (in case file existed)
     await fs.chmod(filePath, SECURE_FILE_MODE)
+    console.log('[FILE I/O] 🔐 Permissions set to 0600')
     
   } catch (error) {
+    console.error('[FILE I/O] ❌ Write error:', error instanceof Error ? error.message : String(error))
     // Clean up temp file if it exists
     try {
       const files = await fs.readdir(path.dirname(filePath))

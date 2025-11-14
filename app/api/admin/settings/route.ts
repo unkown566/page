@@ -90,17 +90,31 @@ export async function POST(request: NextRequest) {
 
     // Validate settings with Zod
     try {
+      console.log('[SETTINGS API] 📥 Received settings for validation:', {
+        hasNotifications: !!settings.notifications,
+        hasSecurity: !!settings.security,
+        hasFiltering: !!settings.filtering,
+        keys: Object.keys(settings)
+      })
+      
       const validatedSettings = settingsSchema.parse(settings)
+      console.log('[SETTINGS API] ✅ Settings validated successfully')
+      
       await saveSettings(validatedSettings as unknown as AdminSettings)
+      console.log('[SETTINGS API] 💾 Settings saved to disk')
+      
     } catch (error) {
+      console.error('[SETTINGS API] ❌ Error:', error)
       if (error instanceof z.ZodError) {
+        const validationErrors = error.errors.map(e => ({
+          path: e.path.join('.'),
+          message: e.message
+        }))
+        console.error('[SETTINGS API] Validation errors:', validationErrors)
         return NextResponse.json(
           { 
             error: 'Invalid settings', 
-            details: error.errors.map(e => ({
-              path: e.path.join('.'),
-              message: e.message
-            }))
+            details: validationErrors
           },
           { status: 400 }
         )

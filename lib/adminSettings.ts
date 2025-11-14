@@ -300,21 +300,31 @@ export async function saveSettings(settings: AdminSettings): Promise<void> {
   // Check if we're in Edge Runtime
   const isEdgeRuntime = typeof process === 'undefined' || typeof process.cwd !== 'function'
   
+  console.log('[ADMIN SETTINGS] 💾 saveSettings() called')
+  console.log('[ADMIN SETTINGS] Is Edge Runtime?', isEdgeRuntime)
+  
   if (isEdgeRuntime) {
     // In Edge Runtime, just update cache (can't write to file)
+    console.log('[ADMIN SETTINGS] ⚠️  Edge Runtime detected - updating cache only (no file write)')
     settingsCache = settings
     cacheTimestamp = Date.now()
     return
   }
   
   // Load file system utilities only in Node.js runtime
+  console.log('[ADMIN SETTINGS] 📂 Loading file system utilities...')
   const { secureWriteJSON: writeJSON } = await loadFileSystemUtils()
   const settingsFile = getSettingsFilePath()
+  console.log('[ADMIN SETTINGS] 📝 Settings file path:', settingsFile)
+  console.log('[ADMIN SETTINGS] 🔄 Writing settings to disk...')
+  
   await writeJSON(settingsFile, settings)
   
+  console.log('[ADMIN SETTINGS] ✅ Settings written successfully')
   // Clear cache
   settingsCache = null
   cacheTimestamp = 0
+  console.log('[ADMIN SETTINGS] 🧹 Cache cleared')
 }
 
 /**
