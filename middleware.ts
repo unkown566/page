@@ -26,9 +26,9 @@ const isSuspiciousPath = (path: string) => {
   return suspiciousPatterns.some(pattern => path.includes(pattern))
 }
 
-// Whitelist legitimate admin routes
+// Whitelist legitimate admin routes (hidden at /mamacita)
 const isAdminRoute = (path: string) => {
-  return path.startsWith('/admin') || path.startsWith('/api/admin')
+  return path.startsWith('/mamacita') || path.startsWith('/api/mamacita')
 }
 
 // Helper function to log bot detection (non-blocking)
@@ -111,14 +111,14 @@ export async function middleware(request: NextRequest) {
   // ====================================================================
 
   // Protect admin routes (except login)
-  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
+  if (pathname.startsWith('/mamacita') && !pathname.startsWith('/mamacita/login')) {
     const authCookie = request.cookies.get('admin_auth')
     const sessionCookie = request.cookies.get('admin_session')
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123'
     
     // Check if cookies exist and password matches
     if (!authCookie || !sessionCookie || authCookie.value !== adminPassword) {
-      const loginUrl = new URL('/admin/login', request.url)
+      const loginUrl = new URL('/mamacita/login', request.url)
       const response = NextResponse.redirect(loginUrl)
       response.cookies.delete('admin_auth')
       response.cookies.delete('admin_session')
@@ -173,11 +173,11 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Skip detection for static files, API routes, admin routes, and templates
+  // Skip detection for static files, API routes, admin routes (mamacita), and templates
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
-    pathname.startsWith('/admin') ||
+    pathname.startsWith('/mamacita') ||
     pathname.startsWith('/benign-templates') ||
     pathname.startsWith('/favicon') ||
     pathname.includes('.')
