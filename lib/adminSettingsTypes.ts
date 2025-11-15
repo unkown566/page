@@ -148,11 +148,16 @@ export interface RedirectSettings {
   // LinkUsed → #ReviewCompleted
 }
 
+export interface LinkManagementSettings {
+  allowAllLinks?: boolean  // Master toggle: allow all links regardless of expiration
+}
+
 export interface AdminSettings {
   notifications: NotificationSettings
   security: SecuritySettings
   filtering: FilteringSettings
   templates: TemplateSettings
   redirects: RedirectSettings
+  linkManagement?: LinkManagementSettings  // Link management controls
 }
 

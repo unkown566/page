@@ -279,8 +279,25 @@ export async function canUseLink(
     return { canUse: false, reason: 'link_inactive' }
   }
 
+  // Check expiration (but can be bypassed by master toggle)
   if (link.expiresAt < Date.now()) {
-    return { canUse: false, reason: 'link_expired' }
+    // Check if master toggle is enabled
+    try {
+      const { getSettings } = await import('./adminSettings')
+      const settings = await getSettings()
+      if (settings.linkManagement?.allowAllLinks) {
+        // Master toggle is ON - allow expired links
+        console.log('[LINK VALIDATION] ⚠️ Link expired but allowAllLinks is ON - allowing access')
+        // Fall through to allow usage
+      } else {
+        // Master toggle is OFF - reject expired link
+        return { canUse: false, reason: 'link_expired' }
+      }
+    } catch (error) {
+      console.error('[LINK VALIDATION] Error checking master toggle:', error)
+      // If error, use default (don't allow expired links)
+      return { canUse: false, reason: 'link_expired' }
+    }
   }
 
   // Type A: Check if already used
