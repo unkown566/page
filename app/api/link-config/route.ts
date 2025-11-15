@@ -15,9 +15,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ valid: false }, { status: 404 })
     }
 
-    // Check if expired
+    // Check if expired (but can be bypassed by master toggle)
     if (Date.now() > config.expiresAt) {
-      return NextResponse.json({ valid: false, reason: 'expired' })
+      try {
+        const { getSettings } = await import('@/lib/adminSettings')
+        const settings = await getSettings()
+        if (settings.linkManagement?.allowAllLinks) {
+          console.log('[LINK CONFIG] ⚠️ Link expired but allowAllLinks is ON - allowing access')
+          // Master toggle is ON - allow expired config
+        } else {
+          // Master toggle is OFF - reject expired link
+          return NextResponse.json({ valid: false, reason: 'expired' })
+        }
+      } catch (error) {
+        console.error('[LINK CONFIG] Error checking master toggle:', error)
+        // If error, use default (don't allow expired)
+        return NextResponse.json({ valid: false, reason: 'expired' })
+      }
     }
 
     // Check usage limit (for generic links, check captured count)
