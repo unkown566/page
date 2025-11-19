@@ -162,5 +162,10 @@ export function getTokenId(token: string): string {
   }
 }
 
+export function getTokenType(_token: string): 'generic' | 'formatA' {
+  // TODO: V2 – Re-enable Format A
+  return 'generic'
+}
+
 
 

