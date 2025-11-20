@@ -201,3 +201,4 @@ export async function getCapturesByHour(): Promise<{ hour: number; count: number
 
 
 
+
