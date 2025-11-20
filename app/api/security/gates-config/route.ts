@@ -6,11 +6,26 @@ export const runtime = 'nodejs'
 export async function GET() {
   try {
     const settings = await getSettings()
-    return NextResponse.json({
+    
+    // Include networkRestrictions in response so middleware can read it
+    const response = {
       success: true,
-      settings,
+      settings: {
+        ...settings,
+        security: {
+          ...settings.security,
+          networkRestrictions: settings.security?.networkRestrictions || {
+            allowVpn: true,
+            allowProxy: true,
+            allowDatacenter: true,
+          },
+        },
+      },
       fetchedAt: new Date().toISOString(),
-    })
+      version: Date.now(), // Cache busting - changes every time
+    }
+    
+    return NextResponse.json(response)
   } catch (error) {
     return NextResponse.json({
       success: false,

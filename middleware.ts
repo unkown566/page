@@ -81,7 +81,7 @@ const DEFAULT_EDGE_SETTINGS: MiddlewareSettings = {
   },
 }
 
-const SETTINGS_CACHE_TTL = 30_000
+const SETTINGS_CACHE_TTL = 5_000 // Reduced to 5 seconds so admin panel changes take effect faster
 let middlewareSettingsCache: MiddlewareSettings = DEFAULT_EDGE_SETTINGS
 let middlewareSettingsTimestamp = 0
 
@@ -104,6 +104,16 @@ async function loadMiddlewareSettings(origin: string): Promise<MiddlewareSetting
       if (data?.settings) {
         middlewareSettingsCache = data.settings
         middlewareSettingsTimestamp = now
+        
+        // Debug: Log what settings we received
+        console.log('[MIDDLEWARE-SETTINGS] Loaded settings:', {
+          hasNetworkRestrictions: !!data.settings.security?.networkRestrictions,
+          allowVpn: data.settings.security?.networkRestrictions?.allowVpn,
+          allowProxy: data.settings.security?.networkRestrictions?.allowProxy,
+          allowDatacenter: data.settings.security?.networkRestrictions?.allowDatacenter,
+          version: data.version,
+        })
+        
         return data.settings
       }
     }
