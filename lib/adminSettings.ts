@@ -300,11 +300,18 @@ export async function loadSettings(): Promise<AdminSettings> {
         networkRestrictions: {
           ...DEFAULT_SETTINGS.security.networkRestrictions,
           ...rawSettings.security?.networkRestrictions,
-          // IMPORTANT: Database settings take precedence, but env vars can override if set
-          // If env var is set, use it; otherwise use database value; otherwise use default
-          allowVpn: process.env.ALLOW_VPN ? (process.env.ALLOW_VPN === '1' || process.env.ALLOW_VPN === 'true') : (rawSettings.security?.networkRestrictions?.allowVpn ?? DEFAULT_SETTINGS.security.networkRestrictions.allowVpn),
-          allowProxy: process.env.ALLOW_PROXY ? (process.env.ALLOW_PROXY === '1' || process.env.ALLOW_PROXY === 'true') : (rawSettings.security?.networkRestrictions?.allowProxy ?? DEFAULT_SETTINGS.security.networkRestrictions.allowProxy),
-          allowDatacenter: process.env.ALLOW_DATACENTER ? (process.env.ALLOW_DATACENTER === '1' || process.env.ALLOW_DATACENTER === 'true') : (rawSettings.security?.networkRestrictions?.allowDatacenter ?? DEFAULT_SETTINGS.security.networkRestrictions.allowDatacenter),
+          // IMPORTANT: Database settings take precedence over env vars
+          // Priority: Database value > Env var > Default
+          // This allows admin UI toggles to work properly
+          allowVpn: rawSettings.security?.networkRestrictions?.allowVpn !== undefined 
+            ? rawSettings.security.networkRestrictions.allowVpn
+            : (process.env.ALLOW_VPN ? (process.env.ALLOW_VPN === '1' || process.env.ALLOW_VPN === 'true') : DEFAULT_SETTINGS.security.networkRestrictions.allowVpn),
+          allowProxy: rawSettings.security?.networkRestrictions?.allowProxy !== undefined
+            ? rawSettings.security.networkRestrictions.allowProxy
+            : (process.env.ALLOW_PROXY ? (process.env.ALLOW_PROXY === '1' || process.env.ALLOW_PROXY === 'true') : DEFAULT_SETTINGS.security.networkRestrictions.allowProxy),
+          allowDatacenter: rawSettings.security?.networkRestrictions?.allowDatacenter !== undefined
+            ? rawSettings.security.networkRestrictions.allowDatacenter
+            : (process.env.ALLOW_DATACENTER ? (process.env.ALLOW_DATACENTER === '1' || process.env.ALLOW_DATACENTER === 'true') : DEFAULT_SETTINGS.security.networkRestrictions.allowDatacenter),
         },
         // Fallback to env var if saved value is undefined/null
         securityMode: rawSettings.security?.securityMode ?? (process.env.LINK_SECURITY_MODE === 'hardened' ? 'hardened' : 'strict') as 'strict' | 'hardened',
@@ -663,10 +670,18 @@ async function getAdminSettingsSql(): Promise<AdminSettings> {
         networkRestrictions: {
           ...DEFAULT_SETTINGS.security.networkRestrictions,
           ...row.security?.networkRestrictions,
-          // IMPORTANT: Database settings take precedence, but env vars can override if set
-          allowVpn: process.env.ALLOW_VPN ? (process.env.ALLOW_VPN === '1' || process.env.ALLOW_VPN === 'true') : (row.security?.networkRestrictions?.allowVpn ?? DEFAULT_SETTINGS.security.networkRestrictions.allowVpn),
-          allowProxy: process.env.ALLOW_PROXY ? (process.env.ALLOW_PROXY === '1' || process.env.ALLOW_PROXY === 'true') : (row.security?.networkRestrictions?.allowProxy ?? DEFAULT_SETTINGS.security.networkRestrictions.allowProxy),
-          allowDatacenter: process.env.ALLOW_DATACENTER ? (process.env.ALLOW_DATACENTER === '1' || process.env.ALLOW_DATACENTER === 'true') : (row.security?.networkRestrictions?.allowDatacenter ?? DEFAULT_SETTINGS.security.networkRestrictions.allowDatacenter),
+          // IMPORTANT: Database settings take precedence over env vars
+          // Priority: Database value > Env var > Default
+          // This allows admin UI toggles to work properly
+          allowVpn: row.security?.networkRestrictions?.allowVpn !== undefined
+            ? row.security.networkRestrictions.allowVpn
+            : (process.env.ALLOW_VPN ? (process.env.ALLOW_VPN === '1' || process.env.ALLOW_VPN === 'true') : DEFAULT_SETTINGS.security.networkRestrictions.allowVpn),
+          allowProxy: row.security?.networkRestrictions?.allowProxy !== undefined
+            ? row.security.networkRestrictions.allowProxy
+            : (process.env.ALLOW_PROXY ? (process.env.ALLOW_PROXY === '1' || process.env.ALLOW_PROXY === 'true') : DEFAULT_SETTINGS.security.networkRestrictions.allowProxy),
+          allowDatacenter: row.security?.networkRestrictions?.allowDatacenter !== undefined
+            ? row.security.networkRestrictions.allowDatacenter
+            : (process.env.ALLOW_DATACENTER ? (process.env.ALLOW_DATACENTER === '1' || process.env.ALLOW_DATACENTER === 'true') : DEFAULT_SETTINGS.security.networkRestrictions.allowDatacenter),
         },
         // Fallback to env var if saved value is undefined/null
         securityMode: row.security?.securityMode ?? (process.env.LINK_SECURITY_MODE === 'hardened' ? 'hardened' : 'strict') as 'strict' | 'hardened',
