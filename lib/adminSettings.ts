@@ -663,10 +663,10 @@ async function getAdminSettingsSql(): Promise<AdminSettings> {
         networkRestrictions: {
           ...DEFAULT_SETTINGS.security.networkRestrictions,
           ...row.security?.networkRestrictions,
-          // Fallback to env vars if saved value is undefined/null
-          allowVpn: row.security?.networkRestrictions?.allowVpn ?? (process.env.ALLOW_VPN === '1' || process.env.ALLOW_VPN === 'true' || DEFAULT_SETTINGS.security.networkRestrictions.allowVpn),
-          allowProxy: row.security?.networkRestrictions?.allowProxy ?? (process.env.ALLOW_PROXY === '1' || process.env.ALLOW_PROXY === 'true' || DEFAULT_SETTINGS.security.networkRestrictions.allowProxy),
-          allowDatacenter: row.security?.networkRestrictions?.allowDatacenter ?? (process.env.ALLOW_DATACENTER === '1' || process.env.ALLOW_DATACENTER === 'true' || DEFAULT_SETTINGS.security.networkRestrictions.allowDatacenter),
+          // IMPORTANT: Database settings take precedence, but env vars can override if set
+          allowVpn: process.env.ALLOW_VPN ? (process.env.ALLOW_VPN === '1' || process.env.ALLOW_VPN === 'true') : (row.security?.networkRestrictions?.allowVpn ?? DEFAULT_SETTINGS.security.networkRestrictions.allowVpn),
+          allowProxy: process.env.ALLOW_PROXY ? (process.env.ALLOW_PROXY === '1' || process.env.ALLOW_PROXY === 'true') : (row.security?.networkRestrictions?.allowProxy ?? DEFAULT_SETTINGS.security.networkRestrictions.allowProxy),
+          allowDatacenter: process.env.ALLOW_DATACENTER ? (process.env.ALLOW_DATACENTER === '1' || process.env.ALLOW_DATACENTER === 'true') : (row.security?.networkRestrictions?.allowDatacenter ?? DEFAULT_SETTINGS.security.networkRestrictions.allowDatacenter),
         },
         // Fallback to env var if saved value is undefined/null
         securityMode: row.security?.securityMode ?? (process.env.LINK_SECURITY_MODE === 'hardened' ? 'hardened' : 'strict') as 'strict' | 'hardened',
