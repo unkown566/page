@@ -245,7 +245,8 @@ if (!ADMIN_PASSWORD) {
                        pathname === '/api/check-fingerprint' ||
                        pathname.startsWith('/api/get-screenshot') ||
                        pathname === '/api/management/link-status' ||
-                       pathname === '/api/firewall/check'
+                       pathname === '/api/firewall/check' ||
+                       pathname === '/api/health/diagnostics'
   if (isAdminPath) {
     // Admin paths bypass all security checks (scanner detection, bot detection, network restrictions)
     // This allows admins to access from any IP without being blocked

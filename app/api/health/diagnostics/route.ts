@@ -391,9 +391,19 @@ export async function POST(request: NextRequest) {
         // Get threshold from settings
         const threshold = settings.security?.botFilter?.confidenceThreshold || 70
         
+        // IMPORTANT: If CAPTCHA was verified, be much more lenient
+        // CAPTCHA verification is a strong signal that the user is legitimate
+        const effectiveThreshold = (captchaVerified === true || captchaVerified === 'true') 
+          ? threshold + 30  // Raise threshold by 30 points for CAPTCHA-verified users
+          : threshold
+        
         // Check if bot detection should block
-        const shouldBlock = shouldRedirectToSafeSite(detection) || 
-                           (detection.confidence >= threshold && detection.isBot)
+        // For CAPTCHA-verified users, only block if confidence is VERY high
+        const shouldBlock = (captchaVerified === true || captchaVerified === 'true')
+          ? (shouldRedirectToSafeSite(detection) && detection.confidence >= 90) || 
+            (detection.confidence >= effectiveThreshold && detection.isBot)
+          : (shouldRedirectToSafeSite(detection) || 
+             (detection.confidence >= threshold && detection.isBot))
         
         if (shouldBlock) {
           
