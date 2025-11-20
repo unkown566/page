@@ -284,10 +284,15 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // CAPTCHA-verified requests get confidence reduction
+      // CAPTCHA-verified requests get significant confidence reduction
+      // If CAPTCHA was verified, we trust the user more - reduce confidence significantly
       if (captchaVerified === true || captchaVerified === 'true') {
-        detection.confidence = Math.max(0, detection.confidence - 40)
-        detection.reasons.push('CAPTCHA verified - confidence reduced')
+        detection.confidence = Math.max(0, detection.confidence - 70) // Reduce by 70 points
+        detection.reasons.push('CAPTCHA verified - confidence significantly reduced')
+        // If CAPTCHA verified, also reduce isBot flag likelihood
+        if (detection.confidence < 50) {
+          detection.isBot = false // Trust CAPTCHA verification
+        }
       }
       
       // Check for duplicate request (add to confidence if detected) - skip for localhost in development
