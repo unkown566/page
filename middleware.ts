@@ -242,6 +242,8 @@ if (!ADMIN_PASSWORD) {
                        pathname === '/api/csrf-token' ||
                        pathname === '/api/security/detect-scanner' ||
                        pathname === '/api/security/challenge/verify' ||
+                       pathname === '/api/captcha-config' ||
+                       pathname === '/api/captcha-background' ||
                        pathname === '/api/detect-language' ||
                        pathname === '/api/check-fingerprint' ||
                        pathname.startsWith('/api/get-screenshot') ||
