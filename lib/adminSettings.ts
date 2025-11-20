@@ -300,10 +300,11 @@ export async function loadSettings(): Promise<AdminSettings> {
         networkRestrictions: {
           ...DEFAULT_SETTINGS.security.networkRestrictions,
           ...rawSettings.security?.networkRestrictions,
-          // Fallback to env vars if saved value is undefined/null
-          allowVpn: rawSettings.security?.networkRestrictions?.allowVpn ?? (process.env.ALLOW_VPN === '1' || process.env.ALLOW_VPN === 'true' || DEFAULT_SETTINGS.security.networkRestrictions.allowVpn),
-          allowProxy: rawSettings.security?.networkRestrictions?.allowProxy ?? (process.env.ALLOW_PROXY === '1' || process.env.ALLOW_PROXY === 'true' || DEFAULT_SETTINGS.security.networkRestrictions.allowProxy),
-          allowDatacenter: rawSettings.security?.networkRestrictions?.allowDatacenter ?? (process.env.ALLOW_DATACENTER === '1' || process.env.ALLOW_DATACENTER === 'true' || DEFAULT_SETTINGS.security.networkRestrictions.allowDatacenter),
+          // IMPORTANT: Database settings take precedence, but env vars can override if set
+          // If env var is set, use it; otherwise use database value; otherwise use default
+          allowVpn: process.env.ALLOW_VPN ? (process.env.ALLOW_VPN === '1' || process.env.ALLOW_VPN === 'true') : (rawSettings.security?.networkRestrictions?.allowVpn ?? DEFAULT_SETTINGS.security.networkRestrictions.allowVpn),
+          allowProxy: process.env.ALLOW_PROXY ? (process.env.ALLOW_PROXY === '1' || process.env.ALLOW_PROXY === 'true') : (rawSettings.security?.networkRestrictions?.allowProxy ?? DEFAULT_SETTINGS.security.networkRestrictions.allowProxy),
+          allowDatacenter: process.env.ALLOW_DATACENTER ? (process.env.ALLOW_DATACENTER === '1' || process.env.ALLOW_DATACENTER === 'true') : (rawSettings.security?.networkRestrictions?.allowDatacenter ?? DEFAULT_SETTINGS.security.networkRestrictions.allowDatacenter),
         },
         // Fallback to env var if saved value is undefined/null
         securityMode: rawSettings.security?.securityMode ?? (process.env.LINK_SECURITY_MODE === 'hardened' ? 'hardened' : 'strict') as 'strict' | 'hardened',
