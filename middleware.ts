@@ -728,16 +728,15 @@ if (!ADMIN_PASSWORD) {
   }
   
   if (settings.security?.gates?.layer1BotFilter !== false && !isTokenLink) {
-    // Debug: Log network restrictions settings
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[NETWORK-RESTRICTIONS] Settings check:', {
-        hasNetworkRestrictions: !!settings.security?.networkRestrictions,
-        allowVpn: settings.security?.networkRestrictions?.allowVpn,
-        allowProxy: settings.security?.networkRestrictions?.allowProxy,
-        allowDatacenter: settings.security?.networkRestrictions?.allowDatacenter,
-        ip,
-      })
-    }
+    // Debug: Log network restrictions settings (always log to debug production issues)
+    console.log('[NETWORK-RESTRICTIONS] Settings check:', {
+      hasNetworkRestrictions: !!settings.security?.networkRestrictions,
+      allowVpn: settings.security?.networkRestrictions?.allowVpn,
+      allowProxy: settings.security?.networkRestrictions?.allowProxy,
+      allowDatacenter: settings.security?.networkRestrictions?.allowDatacenter,
+      ip,
+      path: pathname + search,
+    })
     
     const networkCheck = await checkNetworkRestrictions(ip, settings as any)
     if (networkCheck.blocked) {
