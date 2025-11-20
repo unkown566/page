@@ -173,6 +173,11 @@ export async function middleware(request: NextRequest) {
     userAgent: userAgent.substring(0, 80), // Truncate for readability
   })
   
+  // Avoid recursive middleware executions when logging visitors
+  if (pathname.startsWith('/api/internal/log-visitor')) {
+    return NextResponse.next()
+  }
+  
   // =========================================================
   // FULL DEVELOPMENT BYPASS — MUST RUN BEFORE ANY SECURITY
   // =========================================================
@@ -640,6 +645,14 @@ if (!ADMIN_PASSWORD) {
     return NextResponse.redirect(new URL(redirectUrl, request.url))
   }
 
+  // BYPASS: Allow admin panel and API routes to bypass network restrictions
+  // Admins may be accessing from datacenter IPs (VPS, cloud providers, etc.)
+  const isAdminPath = pathname.startsWith('/mamacita') || pathname.startsWith('/api/admin')
+  if (isAdminPath) {
+    // Admin paths bypass network restrictions but still check IP blocklist
+    // This allows admins to access from datacenter IPs while maintaining security
+  }
+
   // SECURITY CHECK 1: IP Blocklist (if enabled in settings)
   if (settings.security?.gates?.layer1IpBlocklist !== false) {
     if (await isIPBlocked(ip)) {
@@ -685,7 +698,8 @@ if (!ADMIN_PASSWORD) {
   // SECURITY CHECK 2: Network Restrictions (if enabled in settings)
   // Note: Network restrictions are checked as part of bot filter, but can also be checked here
   // For now, we'll check them if bot filter is enabled
-  if (settings.security?.gates?.layer1BotFilter !== false) {
+  // Admin paths bypass network restrictions to allow access from datacenter IPs
+  if (settings.security?.gates?.layer1BotFilter !== false && !isAdminPath) {
     const networkCheck = await checkNetworkRestrictions(ip, settings as any)
     if (networkCheck.blocked) {
       // Log bot detection to visitor tracker
@@ -904,18 +918,6 @@ if (!ADMIN_PASSWORD) {
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * 
-     * CRITICAL FIX: Explicitly include root path '/' to ensure middleware
-     * runs on landing page (/?token=...) and all security checks execute.
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-    '/', // Explicitly match root path and query params (/?token=...)
-  ],
+  matcher: ['/((?!_next).*)'],
 }
 
