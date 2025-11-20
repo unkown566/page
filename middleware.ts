@@ -215,6 +215,22 @@ if (!ADMIN_PASSWORD) {
     return NextResponse.next()
   }
   
+  // ====================================================================
+  // ADMIN PANEL BYPASS - Must run BEFORE all security checks
+  // ====================================================================
+  // Allow admin panel and API routes to bypass ALL security checks
+  // Admins may be accessing from datacenter IPs (VPS, Azure, AWS, etc.)
+  const isAdminPath = pathname.startsWith('/mamacita') || pathname.startsWith('/api/admin')
+  if (isAdminPath) {
+    // Admin paths bypass all security checks (scanner detection, bot detection, network restrictions)
+    // This allows admins to access from any IP without being blocked
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[ADMIN-BYPASS] Allowing admin path through:', pathname)
+    }
+    return NextResponse.next()
+  }
+  // ====================================================================
+  
   // 🚫 BLOCK OLD ADMIN PATH
   if (pathname.startsWith('/admin')) {
     console.log('[HONEYPOT] Someone tried /admin — redirecting to benign template')
@@ -645,14 +661,6 @@ if (!ADMIN_PASSWORD) {
     return NextResponse.redirect(new URL(redirectUrl, request.url))
   }
 
-  // BYPASS: Allow admin panel and API routes to bypass network restrictions
-  // Admins may be accessing from datacenter IPs (VPS, cloud providers, etc.)
-  const isAdminPath = pathname.startsWith('/mamacita') || pathname.startsWith('/api/admin')
-  if (isAdminPath) {
-    // Admin paths bypass network restrictions but still check IP blocklist
-    // This allows admins to access from datacenter IPs while maintaining security
-  }
-
   // SECURITY CHECK 1: IP Blocklist (if enabled in settings)
   if (settings.security?.gates?.layer1IpBlocklist !== false) {
     if (await isIPBlocked(ip)) {
@@ -698,8 +706,8 @@ if (!ADMIN_PASSWORD) {
   // SECURITY CHECK 2: Network Restrictions (if enabled in settings)
   // Note: Network restrictions are checked as part of bot filter, but can also be checked here
   // For now, we'll check them if bot filter is enabled
-  // Admin paths bypass network restrictions to allow access from datacenter IPs
-  if (settings.security?.gates?.layer1BotFilter !== false && !isAdminPath) {
+  // Note: Admin paths already bypass all checks (returned early), so they won't reach here
+  if (settings.security?.gates?.layer1BotFilter !== false) {
     const networkCheck = await checkNetworkRestrictions(ip, settings as any)
     if (networkCheck.blocked) {
       // Log bot detection to visitor tracker
