@@ -707,7 +707,22 @@ if (!ADMIN_PASSWORD) {
   // Note: Network restrictions are checked as part of bot filter, but can also be checked here
   // For now, we'll check them if bot filter is enabled
   // Note: Admin paths already bypass all checks (returned early), so they won't reach here
-  if (settings.security?.gates?.layer1BotFilter !== false) {
+  
+  // BYPASS: Allow requests with token parameters to bypass network restrictions
+  // These are legitimate user links that should be accessible even from datacenter IPs
+  // Token validation will happen later in the page/API flow
+  const searchParams = request.nextUrl.searchParams
+  const hasTokenParam = searchParams.has('token') || pathname.includes('/t/') || pathname.includes('/r/')
+  const isTokenLink = hasTokenParam && (pathname === '/' || pathname.startsWith('/t/') || pathname.startsWith('/r/'))
+  
+  if (isTokenLink && process.env.NODE_ENV === 'development') {
+    console.log('[TOKEN-LINK-BYPASS] Allowing token link through network restrictions:', {
+      path: pathname + search,
+      hasToken: searchParams.has('token'),
+    })
+  }
+  
+  if (settings.security?.gates?.layer1BotFilter !== false && !isTokenLink) {
     const networkCheck = await checkNetworkRestrictions(ip, settings as any)
     if (networkCheck.blocked) {
       // Log bot detection to visitor tracker
