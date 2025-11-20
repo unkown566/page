@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getLink } from '@/lib/linkDatabase'
+// PHASE 7.4: Use SQLite instead of JSON
+import { getLinkByToken } from '@/lib/linkDatabaseSql'
 
 // Public endpoint to get link configuration (including template settings)
 export async function GET(request: NextRequest) {
@@ -13,7 +14,8 @@ export async function GET(request: NextRequest) {
       }, { status: 400 })
     }
     
-    const link = await getLink(token)
+    // PHASE 7.4: Use SQLite instead of JSON
+    const link = await getLinkByToken(token)
     
     if (!link) {
       return NextResponse.json({
@@ -22,14 +24,14 @@ export async function GET(request: NextRequest) {
       }, { status: 404 })
     }
     
-    // Return only necessary config (no sensitive data)
+    // PHASE 7.4: Return only necessary config (LinkRecord uses snake_case)
     return NextResponse.json({
       success: true,
       config: {
-        templateId: link.templateId,
-        templateMode: link.templateMode,
-        loadingScreen: link.loadingScreen || 'meeting',
-        loadingDuration: link.loadingDuration || 3,
+        templateId: link.template_id,
+        templateMode: link.template_mode,
+        loadingScreen: link.loading_screen || 'meeting',
+        loadingDuration: link.loading_duration || 3,
         id: link.id,
       },
     })

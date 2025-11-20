@@ -14,10 +14,10 @@ import type { CaptchaConfig, CaptchaProvider } from './captchaConfigTypes'
  */
 export async function getCaptchaConfigFromAdmin(): Promise<CaptchaConfig> {
   // Dynamic import to prevent client bundling
-  const { getSettings } = await import('./adminSettings')
+  const { getCachedSettings } = await import('./adminSettings')
   
   // Try admin settings first
-  const settings = await getSettings()
+  const settings = getCachedSettings()
   
   if (settings.security.captcha.enabled && settings.security.captcha.provider !== 'none') {
     const provider = settings.security.captcha.provider

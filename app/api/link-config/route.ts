@@ -15,8 +15,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ valid: false }, { status: 404 })
     }
 
-    // Check if expired (but can be bypassed by master toggle)
-    if (Date.now() > config.expiresAt) {
+    // PHASE 7.4: Check if expired (convert Unix timestamp to milliseconds)
+    const expiresAtMs = config.expires_at * 1000
+    if (Date.now() > expiresAtMs) {
       try {
         const { getSettings } = await import('@/lib/adminSettings')
         const settings = await getSettings()
@@ -34,23 +35,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Check usage limit (for generic links, check captured count)
-    if (config.type === 'generic' && config.capturedCount !== null) {
-      const totalEmails = config.totalEmails || 0
-      if (totalEmails > 0 && config.capturedCount >= totalEmails) {
+    // PHASE 7.4: Check usage limit (for generic links, check captured count)
+    // SQLite uses snake_case and stores boolean as 0/1
+    if (config.type === 'generic' && config.captured_count !== null) {
+      const totalEmails = config.total_emails || 0
+      if (totalEmails > 0 && config.captured_count >= totalEmails) {
         return NextResponse.json({ valid: false, reason: 'max_uses' })
       }
     }
 
-    // For personalized links, check if already used
-    if (config.type === 'personalized' && config.used) {
+    // PHASE 7.4: For personalized links, check if already used (SQLite stores boolean as 0/1)
+    if (config.type === 'personalized' && config.used === 1) {
       return NextResponse.json({ valid: false, reason: 'max_uses' })
     }
 
     return NextResponse.json({
       valid: true,
-      expiresAt: config.expiresAt,
-      usedCount: config.type === 'generic' ? (config.capturedCount || 0) : (config.used ? 1 : 0),
+      expiresAt: expiresAtMs, // Return in milliseconds for compatibility
+      usedCount: config.type === 'generic' ? (config.captured_count || 0) : (config.used === 1 ? 1 : 0),
     })
   } catch (error) {
     return NextResponse.json({ valid: false }, { status: 500 })

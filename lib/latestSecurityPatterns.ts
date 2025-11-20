@@ -308,3 +308,8 @@ export function getEvasionTechniques(pattern: LatestSecurityPattern): string[] {
 
 
 
+
+
+
+
+

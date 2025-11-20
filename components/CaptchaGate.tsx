@@ -231,7 +231,7 @@ export default function CaptchaGate({ onVerified }: CaptchaGateProps) {
               </svg>
             </div>
             <h1 className="text-xl font-semibold text-gray-900 mb-2">
-              Verify you're human
+              Verify you&apos;re human
             </h1>
             <p className="text-sm text-gray-600">
               Complete the security check to continue

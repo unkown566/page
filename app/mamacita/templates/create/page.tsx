@@ -103,7 +103,7 @@ export default function CreateTemplatePage() {
                 <li>Go back to templates list</li>
                 <li>Edit an existing template similar to what you want</li>
                 <li>Make your changes</li>
-                <li>Click "Save as New" to duplicate it</li>
+                <li>Click &quot;Save as New&quot; to duplicate it</li>
               </ol>
             </div>
             

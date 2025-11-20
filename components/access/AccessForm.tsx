@@ -36,7 +36,7 @@ export default function AccessForm({ memberId }: AccessFormProps) {
         return
       }
 
-      window.location.href = '/admin'
+      window.location.href = '/mamacita'
     } catch (err: any) {
       setError(err.message || 'Access denied')
     } finally {

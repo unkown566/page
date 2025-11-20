@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Turnstile } from '@marsidev/react-turnstile'
 import { useSearchParams } from 'next/navigation'
 import { getClientCaptchaConfig, type CaptchaProvider } from '@/lib/captchaConfigClient'
 import { getCaptchaRotationConfig, getRotatedProvider } from '@/lib/captchaRotation'
 import PrivateCaptchaGate from './PrivateCaptchaGate'
 import { redirectToSafeSiteWithReason } from '@/lib/redirectWithReason'
 import { API_ROUTES } from '@/lib/api-routes'
+import { Turnstile } from '@marsidev/react-turnstile'
+import { IS_DEV, IS_LOCALHOST } from '@/src/utils/env'
 
 interface CaptchaGateUnifiedProps {
   onVerified: () => void
@@ -19,10 +20,12 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
   const [linkToken, setLinkToken] = useState<string | null>(null)
   const [isVerifying, setIsVerifying] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showCaptcha, setShowCaptcha] = useState(true)
+  const [showCaptcha, setShowCaptcha] = useState(false) // FIX: Start as false, check settings first
   const [status, setStatus] = useState<'waiting' | 'verifying' | 'success' | 'error'>('waiting')
   const [scriptLoaded, setScriptLoaded] = useState(false)
   const turnstileRef = useRef<any>(null)
+  // REMOVED: Template selection (A/B/C/D) - using simple single CAPTCHA
+  const [backgroundUrl, setBackgroundUrl] = useState<string>('') // CAPTCHA background image URL
   
   // Guard against multiple onVerified() calls (FIX #1: Settings check race condition)
   const verifiedRef = useRef(false)
@@ -36,6 +39,7 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
   const provider: CaptchaProvider = rotationConfig.enabled 
     ? getRotatedProvider(rotationConfig)
     : baseProvider
+  const isDevFastMode = IS_DEV || IS_LOCALHOST // PHASE 🦊 SPEED FIX
 
   // Require real Turnstile site key - no test mode fallback
   // User must configure real Turnstile keys in admin settings or environment variables
@@ -49,57 +53,70 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
   }
 
   // Check settings first - if CAPTCHA is disabled, skip it
-  // FIX #1: Removed onVerified dependency, added guard against multiple calls
-  // FIX #4: Added settings response validation
+  // FIX: Use /api/captcha-config (public API) instead of /api/admin/settings (requires auth)
   useEffect(() => {
+    if (isDevFastMode) {
+      return
+    }
     async function checkSettings() {
       // Guard: Don't check settings if already verified
       if (verifiedRef.current) return
       
       try {
-        // Load settings
-        const settingsResponse = await fetch('/api/admin/settings')
+        // Load CAPTCHA config from public API (no auth required)
+        const configResponse = await fetch('/api/captcha-config')
         
-        // FIX #4: Validate response structure
-        if (!settingsResponse.ok) {
-          throw new Error(`Settings API returned ${settingsResponse.status}`)
+        if (!configResponse.ok) {
+          throw new Error(`CAPTCHA config API returned ${configResponse.status}`)
         }
         
-        const responseData = await settingsResponse.json()
+        const configData = await configResponse.json()
         
-        // FIX #4: Validate response is an object
-        if (!responseData || typeof responseData !== 'object') {
-          throw new Error('Invalid settings response structure')
+        // Validate response structure
+        if (!configData || typeof configData !== 'object' || !configData.config) {
+          throw new Error('Invalid CAPTCHA config response structure')
         }
         
-        // API returns { success: true, settings: {...} } or just settings object
-        const settings = responseData.settings || responseData
+        const config = configData.config
         
-        // FIX #4: Validate settings structure
-        if (!settings.security || typeof settings.security !== 'object') {
-          setShowCaptcha(true)
-          return
+        // DEBUG: Log what we received
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[CaptchaGate] Config received:', {
+            enabled: config.enabled,
+            provider: config.provider,
+            layer2Captcha: 'checking...',
+            fullConfig: config,
+          })
         }
         
-        // Check both gate setting and feature setting (support both structures)
-        const layer2Captcha = settings.security.gates?.layer2Captcha
-        const captchaEnabled = settings.security.captcha?.enabled
-        const captchaProvider = settings.security.captcha?.provider
-        
-        // Check if CAPTCHA gate is disabled (correct path: settings.security.gates.layer2Captcha)
-        if (layer2Captcha === false || captchaEnabled === false || captchaProvider === 'none') {
-          // FIX #1: Guard against multiple calls
+        // Check if CAPTCHA is disabled
+        // enabled: false OR provider: 'none' means CAPTCHA is disabled
+        if (config.enabled === false || config.provider === 'none') {
+          // FIX: Guard against multiple calls
           if (!verifiedRef.current) {
             verifiedRef.current = true
+            if (process.env.NODE_ENV === 'development') {
+              console.log('⏭️ [CaptchaGate] CAPTCHA DISABLED - SKIPPING', {
+                enabled: config.enabled,
+                provider: config.provider,
+              })
+            }
             onVerified()
           }
           return
         }
         
+        // CAPTCHA is enabled - show it
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ [CaptchaGate] CAPTCHA ENABLED - SHOWING', {
+            enabled: config.enabled,
+            provider: config.provider,
+          })
+        }
         setShowCaptcha(true)
       } catch (error) {
         if (process.env.NODE_ENV === 'development') {
-          console.error('Settings check error:', error)
+          console.error('CAPTCHA config check error:', error)
         }
         // Fail open - show CAPTCHA (safer than blocking)
         setShowCaptcha(true)
@@ -107,7 +124,7 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
     }
     
     checkSettings()
-  }, []) // FIX #1: Removed onVerified dependency - only run once on mount
+  }, [isDevFastMode]) // Run once on mount
 
   // Get link token from URL query string
   useEffect(() => {
@@ -124,22 +141,60 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
         sessionStorage.setItem('link_token', token)
       }
     } else {
+      // CRITICAL FIX: Don't redirect if token is missing - wait for link validation
+      // The link validation in app/page.tsx will handle invalid links
+      // This gate should only verify CAPTCHA, not validate the link itself
       // Wait a bit to see if token appears (race condition with Next.js routing)
       setTimeout(() => {
         const retryToken = searchParams.get('token') || new URLSearchParams(window.location.search).get('token')
-        if (!retryToken) {
-          redirectToSafeSiteWithReason('token_invalid')
-        } else {
+        if (retryToken) {
           setLinkToken(retryToken)
         }
+        // Don't redirect - let app/page.tsx handle invalid links
       }, 200)
       return
     }
   }, [searchParams])
 
+  // REMOVED: Template loading - using simple single CAPTCHA
+
+  // Load CAPTCHA background image
+  useEffect(() => {
+    if (isDevFastMode) return
+    async function loadBackground() {
+      try {
+        const res = await fetch('/api/captcha-background')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.success && data.url) {
+            // Try JPG first, fallback to SVG if JPG doesn't exist
+            const bgId = data.background
+            if (bgId && bgId !== 'default') {
+              // Create image element to test if JPG exists, fallback to SVG
+              const testImg = new Image()
+              testImg.onload = () => {
+                setBackgroundUrl(`/captcha-bg/${bgId}.jpg`)
+              }
+              testImg.onerror = () => {
+                // JPG doesn't exist, use SVG
+                setBackgroundUrl(`/captcha-bg/${bgId}.svg`)
+              }
+              testImg.src = `/captcha-bg/${bgId}.jpg`
+            } else {
+              setBackgroundUrl('')
+            }
+          }
+        }
+      } catch (error) {
+        // Silent fail - use default (no background)
+      }
+    }
+    loadBackground()
+  }, [isDevFastMode])
+
   // Load Turnstile script manually (only for Turnstile provider)
   useEffect(() => {
-    if (provider !== 'turnstile') return
+    if (isDevFastMode || provider !== 'turnstile') return
     
     // Check if script already loaded
     if (typeof window !== 'undefined' && (window as any).turnstile) {
@@ -163,11 +218,14 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
     return () => {
       // Cleanup handled by React
     }
-  }, [provider])
+  }, [provider, isDevFastMode])
 
   const handleVerify = async (token?: string | null) => {
     // FIX #1: Guard against multiple verifications using ref (more reliable than sessionStorage)
     if (verifiedRef.current) {
+      return
+    }
+    if (isDevFastMode) {
       return
     }
     
@@ -185,8 +243,13 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
       searchParams.get('token') ||
       (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') : null)
 
+    // CRITICAL FIX: Don't redirect if token is missing - just return
+    // The link validation in app/page.tsx will handle invalid links
+    // This gate should only verify CAPTCHA, not validate the link itself
     if (!tokenToVerify) {
-      redirectToSafeSiteWithReason('token_invalid')
+      setError('Link token not found. Please check your link.')
+      setIsVerifying(false)
+      setStatus('error')
       return
     }
     
@@ -250,6 +313,21 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
           sessionStorage.setItem('link_payload', JSON.stringify(result.payload))
         }
         
+        // PATCH 4: Create server-side CAPTCHA session
+        try {
+          await fetch('/api/captcha/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ verified: true }),
+          })
+          // Cookie is set automatically by server (httpOnly)
+        } catch (sessionError) {
+          // Fail silently - session creation is optional, don't block user flow
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Failed to create CAPTCHA session:', sessionError)
+          }
+        }
+        
         setShowCaptcha(false)
         
         try {
@@ -263,8 +341,13 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
         setStatus('error')
         setIsVerifying(false)
         
+        // CRITICAL FIX: Don't redirect on invalid-link-token - just show error
+        // The link validation in app/page.tsx will handle invalid links
+        // This gate should only verify CAPTCHA, not validate the link itself
         if (result.error === 'invalid-link-token') {
-          redirectToSafeSiteWithReason('token_invalid')
+          setError('Invalid link token. Please check your link.')
+          setStatus('error')
+          setIsVerifying(false)
           return
         }
         
@@ -312,8 +395,20 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
       // Reset verified ref
       verifiedRef.current = false
     }
-    setShowCaptcha(true)
-  }, []) // Run once on mount, before any other effects
+    // REMOVED: setShowCaptcha(true) - Let settings check decide
+    // Settings check will set showCaptcha based on admin settings
+  }, [])
+
+  useEffect(() => {
+    if (isDevFastMode && !verifiedRef.current) {
+      verifiedRef.current = true
+      onVerified()
+    }
+  }, [isDevFastMode, onVerified])
+
+  if (isDevFastMode) {
+    return null
+  }
 
   if (!showCaptcha) {
     return null
@@ -334,58 +429,64 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
     )
   }
 
-  // Render Turnstile (default)
+  // Simple single CAPTCHA (removed A/B/C/D template system)
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="w-full max-w-md p-8">
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          {/* Cloudflare-style header */}
+    <div
+      className="min-h-screen w-full flex items-center justify-center relative"
+      style={{
+        backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundColor: backgroundUrl ? undefined : 'rgb(239 246 255)', // Fallback to blue-50
+      }}
+    >
+      {/* Optional: Translucent overlay layer (recommended) */}
+      {backgroundUrl && (
+        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
+      )}
+      
+      {/* Apple-style Glass CAPTCHA Card (centered, above overlay) */}
+      <div className="relative z-10 w-full max-w-md p-8">
+        <div
+          className="rounded-2xl p-8"
+          style={{
+            background: 'linear-gradient(145deg, rgba(255,255,255,0.70), rgba(240,240,240,0.30))',
+            backdropFilter: 'blur(25px)',
+            WebkitBackdropFilter: 'blur(25px)',
+            border: '1px solid rgba(255, 255, 255, 0.4)',
+            boxShadow: `
+              inset 0 0 0.5px rgba(255,255,255,0.5),
+              0 8px 32px rgba(0, 0, 0, 0.08)
+            `,
+            maxWidth: '420px',
+            width: '100%',
+            animation: 'float 6s ease-in-out infinite',
+          }}
+        >
+          {/* Simple Header */}
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <svg
-                className="w-12 h-12"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12 2L2 7L12 12L22 7L12 2Z"
-                  stroke="#F6821F"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M2 17L12 22L22 17"
-                  stroke="#F6821F"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M2 12L12 17L22 12"
-                  stroke="#F6821F"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">
-              Verify you're human
+            <h1 className="text-2xl font-semibold text-gray-900 mb-2" style={{ color: 'rgba(17, 24, 39, 0.9)' }}>
+              Security Verification
             </h1>
-            <p className="text-sm text-gray-600">
-              Complete the security check to continue
+            <p className="text-base" style={{ color: 'rgba(75, 85, 99, 0.8)' }}>
+              Please complete the verification below
             </p>
           </div>
 
-          {/* Cloudflare Turnstile Widget */}
+          {/* Cloudflare Turnstile Widget - Force Light Theme */}
           <div className="flex justify-center mb-6">
             {!turnstileSiteKey ? (
-              <div className="w-[300px] h-[65px] bg-red-50 border border-red-200 rounded flex items-center justify-center">
+              <div 
+                className="w-[300px] h-[65px] rounded-lg flex items-center justify-center"
+                style={{
+                  background: 'rgba(254, 242, 242, 0.8)',
+                  border: '1px solid rgba(254, 202, 202, 0.5)',
+                }}
+              >
                 <div className="text-center">
-                  <p className="text-xs text-red-600 font-medium">CAPTCHA not configured</p>
-                  <p className="text-xs text-red-500 mt-1">Please configure Turnstile keys</p>
+                  <p className="text-xs font-medium" style={{ color: 'rgba(220, 38, 38, 0.9)' }}>CAPTCHA not configured</p>
+                  <p className="text-xs mt-1" style={{ color: 'rgba(239, 68, 68, 0.8)' }}>Please configure Turnstile keys</p>
                 </div>
               </div>
             ) : scriptLoaded || (typeof window !== 'undefined' && (window as any).turnstile) ? (
@@ -421,79 +522,55 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
                   setError('Verification expired. Please verify again.')
                 }}
                 options={{
-                  theme: 'light',
+                  theme: 'light', // Force light theme - no OS-based switching
                   size: 'normal',
                 }}
               />
             ) : (
-              <div className="w-[300px] h-[65px] bg-gray-100 rounded border border-gray-300 flex items-center justify-center">
+              <div 
+                className="w-[300px] h-[65px] rounded-lg flex items-center justify-center"
+                style={{
+                  background: 'rgba(249, 250, 251, 0.8)',
+                  border: '1px solid rgba(209, 213, 219, 0.5)',
+                }}
+              >
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mx-auto mb-2"></div>
-                  <p className="text-xs text-gray-500">Loading verification...</p>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-xs" style={{ color: 'rgba(107, 114, 128, 0.8)' }}>Loading verification...</p>
                 </div>
               </div>
             )}
           </div>
 
           {/* Status messages */}
-          {status === 'waiting' && !captchaToken && scriptLoaded && (
-            <div className="text-center">
-              <p className="text-xs text-gray-400">
-                Click the checkbox above to verify
-              </p>
-            </div>
-          )}
-
           {status === 'verifying' && (
-            <div className="text-center">
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              </div>
-            </div>
-          )}
-
-          {status === 'success' && (
-            <div className="text-center">
-              <div className="flex items-center justify-center space-x-2 mb-2">
-                <svg
-                  className="w-5 h-5 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                <p className="text-sm text-green-600">Verification successful</p>
+            <div className="text-center mb-4">
+              <div className="flex items-center justify-center space-x-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                <p className="text-sm" style={{ color: 'rgba(75, 85, 99, 0.8)' }}>Verifying...</p>
               </div>
             </div>
           )}
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
-              <p className="text-sm text-red-600 text-center">{error}</p>
+            <div className="text-center mb-4">
+              <p className="text-sm" style={{ color: 'rgba(220, 38, 38, 0.9)' }}>{error}</p>
             </div>
           )}
 
-          {captchaToken && status !== 'verifying' && status !== 'success' && (
-            <button
-              onClick={() => handleVerify()}
-              disabled={isVerifying || !captchaToken}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2.5 px-4 rounded text-sm transition-colors duration-200"
+          {/* Footer */}
+          <div 
+            className="text-center mt-6 pt-6"
+            style={{
+              borderTop: '1px solid rgba(229, 231, 235, 0.5)',
+            }}
+          >
+            <p 
+              className="text-xs flex items-center justify-center gap-1"
+              style={{ color: 'rgba(107, 114, 128, 0.7)' }}
             >
-              {isVerifying ? 'Verifying...' : 'Continue'}
-            </button>
-          )}
-
-          {/* Cloudflare footer */}
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-400">
-              Protected by{' '}
-              <span className="font-semibold text-gray-600">Cloudflare</span>
+              <span>Protected by</span>
+              <span className="font-semibold" style={{ color: 'rgba(75, 85, 99, 0.8)' }}>Cloudflare</span>
             </p>
           </div>
         </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import NextImage from 'next/image'
 
 interface DomainLogoProps {
   domain: string
@@ -36,10 +37,13 @@ export default function DomainLogo({ domain }: DomainLogoProps) {
     <div className="flex justify-center mb-4">
       <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
         {logoUrl ? (
-          <img
+          <NextImage
             src={logoUrl}
             alt={`${domain} logo`}
+            width={48}
+            height={48}
             className="w-12 h-12 rounded-full object-contain"
+            unoptimized
             onError={() => {
               setLogoUrl(null)
             }}

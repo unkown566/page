@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseEmailList } from '@/lib/emailListParser'
 import { createGenericLink } from '@/lib/linkManagement'
+import { buildFinalLinkURL } from '@/lib/linkUrlBuilder'
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,6 +9,12 @@ export async function POST(request: NextRequest) {
     const name = formData.get('name') as string
     const expirationDaysStr = formData.get('expirationDays') as string
     const file = formData.get('emailList') as File
+    const linkFormatRaw = formData.get('link_format') as string | null
+    
+    // Validate and set link_format (default to 'C' if not provided or invalid)
+    const linkFormat: 'A' | 'B' | 'C' = (linkFormatRaw && ['A', 'B', 'C'].includes(linkFormatRaw)) 
+      ? linkFormatRaw as 'A' | 'B' | 'C'
+      : 'C'
 
     // Validate required fields
     if (!name || !expirationDaysStr || !file) {
@@ -51,12 +58,22 @@ export async function POST(request: NextRequest) {
                    process.env.BASE_URL || 
                    `${request.nextUrl.protocol}//${request.headers.get('host') || 'localhost:3000'}`
 
+    // Build final URL using the selected format (with daily mutation if enabled)
+    // For generic links, we don't have a mappingId, so format C will use token prefix as fallback
+    const finalUrl = await buildFinalLinkURL({
+      baseUrl,
+      format: linkFormat,
+      token: result.token,
+      mappingId: null, // Generic links don't have mappingId
+    })
+
     return NextResponse.json({
       success: true,
       name,
       url: result.url,
-      fullUrl: `${baseUrl}${result.url}`,
+      fullUrl: finalUrl,
       token: result.token,
+      format: linkFormat,
       totalEmails: result.totalEmails,
       expiresAt: result.expiresAt,
       expiresAtFormatted: new Date(result.expiresAt).toLocaleString(),

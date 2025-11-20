@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import NextImage from 'next/image'
 
 interface HeaderProps {
   domain?: string
@@ -33,10 +34,13 @@ export default function Header({ domain }: HeaderProps) {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-3">
             {domain && faviconUrl && (
-              <img
+              <NextImage
                 src={faviconUrl}
                 alt={`${domain} icon`}
+                width={32}
+                height={32}
                 className="w-8 h-8 rounded"
+                unoptimized
               />
             )}
             <div>
@@ -63,6 +67,11 @@ export default function Header({ domain }: HeaderProps) {
     </header>
   )
 }
+
+
+
+
+
 
 
 

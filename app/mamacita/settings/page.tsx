@@ -12,6 +12,7 @@ import LanguageSettings from '@/components/admin/LanguageSettings'
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'notifications' | 'security' | 'filtering' | 'templates' | 'redirects'>('notifications')
+  const [securitySubTab, setSecuritySubTab] = useState<'basic' | 'advanced'>('basic')
   const [settings, setSettings] = useState<AdminSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -123,15 +124,26 @@ export default function SettingsPage() {
     if (!settings) return
 
     const keys = path.split('.')
-    const newSettings = { ...settings }
+    // Deep clone to avoid mutating the original state
+    const newSettings = JSON.parse(JSON.stringify(settings))
     let current: any = newSettings
 
+    // Navigate to the parent object, creating nested objects if they don't exist
     for (let i = 0; i < keys.length - 1; i++) {
-      current[keys[i]] = { ...current[keys[i]] }
-      current = current[keys[i]]
+      const key = keys[i]
+      if (!current[key] || typeof current[key] !== 'object' || Array.isArray(current[key])) {
+        current[key] = {}
+      } else {
+        // Deep clone nested objects to avoid mutations
+        current[key] = JSON.parse(JSON.stringify(current[key]))
+      }
+      current = current[key]
     }
 
-    current[keys[keys.length - 1]] = value
+    // Set the final value
+    const finalKey = keys[keys.length - 1]
+    current[finalKey] = value
+    
     setSettings(newSettings)
   }
 
@@ -175,6 +187,59 @@ export default function SettingsPage() {
               Configure your admin panel and security settings
             </p>
           </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={async () => {
+                if (!confirm('Are you sure you want to reset all security settings to default?\n\nThis will reset all security gate settings to defaults and clear any cached data.\n\n⚠️ This cannot be undone')) {
+                  return
+                }
+                
+                const clearCaptchaKeys = confirm('Also clear CAPTCHA keys?\n\n(Cloudflare Turnstile, PrivateCaptcha)')
+                
+                setSaving(true)
+                const loadingToast = toast.loading('Resetting settings...', {
+                  position: 'top-right'
+                })
+                
+                try {
+                  const response = await fetch('/api/admin/settings/reset', {
+                    method: 'POST',
+                    headers: { 
+                      'Content-Type': 'application/json',
+                      'X-CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({ clearCaptchaKeys }),
+                  })
+                  
+                  const data = await response.json()
+                  if (data.success) {
+                    await fetchSettings()
+                    toast.success('Settings reset to defaults successfully!', {
+                      id: loadingToast,
+                      duration: 3000,
+                      position: 'top-right'
+                    })
+                  } else {
+                    throw new Error(data.error || 'Failed to reset settings')
+                  }
+                } catch (error: any) {
+                  toast.error(`Failed to reset: ${error.message}`, {
+                    id: loadingToast,
+                    duration: 5000,
+                    position: 'top-right'
+                  })
+                } finally {
+                  setSaving(false)
+                }
+              }}
+              disabled={saving || !csrfToken}
+              className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Reset
+            </button>
           <button
             onClick={handleSave}
             disabled={saving}
@@ -192,6 +257,7 @@ export default function SettingsPage() {
               </>
             )}
           </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -362,9 +428,9 @@ export default function SettingsPage() {
                         <p className="text-sm font-semibold opacity-90">Troubleshooting Steps:</p>
                         <ol className="text-sm space-y-1 list-decimal list-inside opacity-80 ml-2">
                           <li>Open Telegram and search for your bot: <code className="bg-gray-800 px-1 rounded">@foxresultsbot</code></li>
-                          <li>Click "Start" or send <code className="bg-gray-800 px-1 rounded">/start</code> to the bot</li>
-                          <li>Send any message to the bot (e.g., "Hello")</li>
-                          <li>Click "Test Telegram Connection" again</li>
+                          <li>Click &quot;Start&quot; or send <code className="bg-gray-800 px-1 rounded">/start</code> to the bot</li>
+                          <li>Send any message to the bot (e.g., &quot;Hello&quot;)</li>
+                          <li>Click &quot;Test Telegram Connection&quot; again</li>
                           <li>Check that the Chat ID in settings matches your Telegram account</li>
                         </ol>
                         <p className="text-xs mt-3 opacity-70 italic">
@@ -416,6 +482,38 @@ export default function SettingsPage() {
         {/* Security Tab */}
         {activeTab === 'security' && (
           <div className="space-y-6">
+            {/* BASIC/ADVANCED Sub-tabs */}
+            <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setSecuritySubTab('basic')}
+                className={`
+                  px-4 py-2 font-medium transition-colors border-b-2
+                  ${
+                    securitySubTab === 'basic'
+                      ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }
+                `}
+              >
+                Basic
+              </button>
+              <button
+                onClick={() => setSecuritySubTab('advanced')}
+                className={`
+                  px-4 py-2 font-medium transition-colors border-b-2
+                  ${
+                    securitySubTab === 'advanced'
+                      ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }
+                `}
+              >
+                Advanced
+              </button>
+            </div>
+
+            {/* BASIC Tab Content */}
+            {securitySubTab === 'basic' && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                 Security Gates Configuration
@@ -472,6 +570,32 @@ export default function SettingsPage() {
                         <option value="privatecaptcha">PrivateCaptcha</option>
                         <option value="none">None</option>
                       </select>
+                    </div>
+
+                    {/* REMOVED: CAPTCHA Template Selector (A/B/C/D) - using simple single CAPTCHA */}
+
+                    {/* CAPTCHA Background Image Selector */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        CAPTCHA Background Image
+                      </label>
+                      <select
+                        value={settings.security.captcha.background || 'default'}
+                        onChange={(e) => {
+                          updateSetting('security.captcha.background', e.target.value as 'default' | 'bg1' | 'bg2' | 'bg3' | 'bg4' | 'random')
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      >
+                        <option value="default">Default (no image)</option>
+                        <option value="bg1">Nature Blue</option>
+                        <option value="bg2">Dark Security</option>
+                        <option value="bg3">Soft Gradient</option>
+                        <option value="bg4">Corporate Clean</option>
+                        <option value="random">Random (rotate each visit)</option>
+                      </select>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Select background image for CAPTCHA page. Images are stored in /public/captcha-bg/
+                      </p>
                     </div>
 
                     {settings.security.captcha.provider === 'turnstile' && (
@@ -542,89 +666,6 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Layer 3: Bot Delay */}
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                    Layer 3: Bot Delay
-                  </h3>
-                  <div className="space-y-4">
-                    <label className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={settings.security.botDelay.enabled}
-                        onChange={(e) => updateSetting('security.botDelay.enabled', e.target.checked)}
-                        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600"
-                      />
-                      <span className="text-gray-700 dark:text-gray-300">Enable delay</span>
-                    </label>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Min Delay: {settings.security.botDelay.min}s
-                        </label>
-                        <input
-                          type="range"
-                          min="1"
-                          max="10"
-                          value={settings.security.botDelay.min}
-                          onChange={(e) => updateSetting('security.botDelay.min', Number(e.target.value))}
-                          className="w-full"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Max Delay: {settings.security.botDelay.max}s
-                        </label>
-                        <input
-                          type="range"
-                          min="1"
-                          max="10"
-                          value={settings.security.botDelay.max}
-                          onChange={(e) => updateSetting('security.botDelay.max', Number(e.target.value))}
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Layer 4: Stealth Verification */}
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                    Layer 4: Stealth Verification
-                  </h3>
-                  <div className="space-y-4">
-                    {(['enabled', 'behavioralAnalysis', 'mouseTracking', 'scrollTracking', 'honeypot'] as const).map((key) => (
-                      <label key={key} className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={(settings.security.stealthVerification as any)[key] || false}
-                          onChange={(e) => updateSetting(`security.stealthVerification.${key}`, e.target.checked)}
-                          className="w-5 h-5 rounded border-gray-300 dark:border-gray-600"
-                        />
-                        <span className="text-gray-700 dark:text-gray-300 capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}
-                        </span>
-                      </label>
-                    ))}
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Minimum Time: {settings.security.stealthVerification.minimumTime}s
-                      </label>
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        value={settings.security.stealthVerification.minimumTime}
-                        onChange={(e) => updateSetting('security.stealthVerification.minimumTime', Number(e.target.value))}
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-                </div>
-
                 {/* Security Gates Control */}
                 <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -679,104 +720,259 @@ export default function SettingsPage() {
                       />
                       <span className="text-gray-700 dark:text-gray-300">Layer 2: CAPTCHA Verification</span>
                     </label>
-                    <label className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={settings.security.gates.layer3BotDelay || false}
-                        onChange={(e) => updateSetting('security.gates.layer3BotDelay', e.target.checked)}
-                        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600"
-                      />
-                      <span className="text-gray-700 dark:text-gray-300">Layer 3: Bot Detection Delay</span>
-                    </label>
-                    <label className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={settings.security.gates.layer4StealthVerification || false}
-                        onChange={(e) => updateSetting('security.gates.layer4StealthVerification', e.target.checked)}
-                        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600"
-                      />
-                      <span className="text-gray-700 dark:text-gray-300">Layer 4: Stealth Verification</span>
-                    </label>
                   </div>
                 </div>
 
-                {/* Reset to Default Button */}
-                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-lg p-6">
-                    <div className="flex items-start gap-3 mb-4">
-                      <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                          Having issues?
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Reset all security settings to safe defaults and clear any cached state.
-                        </p>
-                      </div>
+              </div>
+            </div>
+            )}
+
+            {/* ADVANCED Tab Content */}
+            {securitySubTab === 'advanced' && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/50 rounded-lg">
+                <div className="flex gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-red-800 dark:text-red-200">
+                    <div className="font-medium mb-1">⚠️ Advanced Settings Warning</div>
+                    <div className="text-red-700 dark:text-red-300">
+                      These settings require technical knowledge. Incorrect configuration may block legitimate users or reduce security effectiveness.
                     </div>
-                    <button
-                      onClick={async () => {
-                        if (!confirm('Are you sure you want to reset all security settings to default?\n\nThis will reset all security gate settings to defaults and clear any cached data.\n\n⚠️ This cannot be undone')) {
-                          return
-                        }
-                        
-                        const clearCaptchaKeys = confirm('Also clear CAPTCHA keys?\n\n(Cloudflare Turnstile, PrivateCaptcha)')
-                        
-                        setSaving(true)
-                        const loadingToast = toast.loading('Resetting settings...', {
-                          position: 'top-right'
-                        })
-                        
-                        try {
-                          const response = await fetch('/api/admin/settings/reset', {
-                            method: 'POST',
-                            headers: { 
-                              'Content-Type': 'application/json',
-                              'X-CSRF-Token': csrfToken
-                            },
-                            body: JSON.stringify({ clearCaptchaKeys }),
-                          })
-                          
-                          const data = await response.json()
-                          if (data.success) {
-                            // Reload settings from server
-                            await fetchSettings()
-                            
-                            toast.success('Settings reset to defaults successfully!', {
-                              id: loadingToast,
-                              duration: 3000,
-                              position: 'top-right'
-                            })
-                          } else {
-                            throw new Error(data.error || 'Failed to reset settings')
-                          }
-                        } catch (error: any) {
-                          toast.error(`Failed to reset: ${error.message}`, {
-                            id: loadingToast,
-                            duration: 5000,
-                            position: 'top-right'
-                          })
-                        } finally {
-                          setSaving(false)
-                        }
-                      }}
-                      disabled={saving || !csrfToken}
-                      className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      {saving ? 'Resetting...' : 'Reset to Default Settings'}
-                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {/* Security Mode */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-red-500" />
+                    Security Mode
+                  </h3>
+                  <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-lg mb-4">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      <strong>⚠️ CRITICAL:</strong> Changing to &quot;hardened&quot; mode may block legitimate users. Use only if you understand the implications.
+                    </p>
+                  </div>
+                  <select
+                    value={settings.security.securityMode || 'strict'}
+                    onChange={(e) => updateSetting('security.securityMode', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  >
+                    <option value="strict">Strict (Default - Recommended)</option>
+                    <option value="hardened">Hardened (Enhanced Security - May Block Legitimate Users)</option>
+                  </select>
+                </div>
+
+                {/* Daily URL Mutation */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Daily URL Mutation
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Enable daily-changing cloaked URL path prefixes for all link formats.
+                  </p>
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                      checked={settings.security.enableDailyUrlMutation !== false}
+                      onChange={(e) => updateSetting('security.enableDailyUrlMutation', e.target.checked)}
+                        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600"
+                      />
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">Enable Daily URL Mutation</span>
+                    </label>
+                </div>
+
+                {/* Polymorphic Cloaking */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Polymorphic Cloaking
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Enable HTML/JavaScript mutation to make pages harder to fingerprint.
+                  </p>
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                      checked={settings.security.enablePolymorphicCloaking !== false}
+                      onChange={(e) => updateSetting('security.enablePolymorphicCloaking', e.target.checked)}
+                        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600"
+                      />
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">Enable Polymorphic Cloaking</span>
+                    </label>
+                </div>
+
+                {/* Behavioral Analysis */}
+                      <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Behavioral Analysis
+                        </h3>
+                  <div className="space-y-4">
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={settings.security.behavioral?.enableBehaviorModel !== false}
+                        onChange={(e) => updateSetting('security.behavioral.enableBehaviorModel', e.target.checked)}
+                        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600"
+                      />
+                      <span className="text-gray-700 dark:text-gray-300">Enable Behavior Model</span>
+                    </label>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Block Below Score
+                        </label>
+                        <input
+                          type="number"
+                          min="-100"
+                          max="100"
+                          value={settings.security.behavioral?.behaviorThresholds?.blockBelow ?? 0}
+                          onChange={(e) => updateSetting('security.behavioral.behaviorThresholds.blockBelow', parseInt(e.target.value) || 0)}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          CAPTCHA Below Score
+                        </label>
+                        <input
+                          type="number"
+                          min="-100"
+                          max="100"
+                          value={settings.security.behavioral?.behaviorThresholds?.captchaBelow ?? 5}
+                          onChange={(e) => updateSetting('security.behavioral.behaviorThresholds.captchaBelow', parseInt(e.target.value) || 5)}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        />
+                    </div>
+                    </div>
+
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={settings.security.behavioral?.enableMicroHumanSignals !== false}
+                        onChange={(e) => updateSetting('security.behavioral.enableMicroHumanSignals', e.target.checked)}
+                        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600"
+                      />
+                      <span className="text-gray-700 dark:text-gray-300">Enable Micro Human Signals</span>
+                    </label>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Micro Human Weight (0.0 - 1.0)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={settings.security.behavioral?.microHumanWeight ?? 0.3}
+                        onChange={(e) => updateSetting('security.behavioral.microHumanWeight', parseFloat(e.target.value) || 0.3)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Network Restrictions Section */}
-                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                {/* Security Brain */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Unified Security Brain
+                  </h3>
+                  <div className="space-y-4">
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={settings.security.securityBrain?.enabled !== false}
+                        onChange={(e) => updateSetting('security.securityBrain.enabled', e.target.checked)}
+                        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600"
+                      />
+                      <span className="text-gray-700 dark:text-gray-300">Enable Security Brain</span>
+                    </label>
+
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={settings.security.securityBrain?.strictMode === true}
+                        onChange={(e) => updateSetting('security.securityBrain.strictMode', e.target.checked)}
+                        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600"
+                      />
+                      <span className="text-gray-700 dark:text-gray-300">Strict Mode (May increase false positives)</span>
+                    </label>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Block Threshold (Lower = more blocking)
+                      </label>
+                      <input
+                        type="number"
+                        min="-100"
+                        max="100"
+                        value={settings.security.securityBrain?.blockThreshold ?? -10}
+                        onChange={(e) => {
+                          // PRIORITY ZERO FIX: Ensure we always save a number, never empty string
+                          const value = e.target.value.trim()
+                          if (value === '') {
+                            // If field is empty, delete from DB so fallback applies
+                            const newSettings = JSON.parse(JSON.stringify(settings))
+                            if (newSettings.security?.securityBrain) {
+                              delete newSettings.security.securityBrain.blockThreshold
+                            }
+                            updateSetting('security.securityBrain', newSettings.security?.securityBrain || {})
+                          } else {
+                            const numValue = parseInt(value, 10)
+                            if (!isNaN(numValue)) {
+                              updateSetting('security.securityBrain.blockThreshold', numValue)
+                            }
+                          }
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bot Filter Confidence Threshold */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Bot Filter Confidence Threshold
+                  </h3>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Confidence Threshold (0-100): {settings.security.botFilter?.confidenceThreshold ?? 70}
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={settings.security.botFilter?.confidenceThreshold ?? 70}
+                      onChange={(e) => updateSetting('security.botFilter.confidenceThreshold', parseInt(e.target.value) || 70)}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Higher values = stricter bot detection (may block more legitimate users)
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+            )}
+          </div>
+        )}
+
+        {/* Filtering Tab */}
+        {activeTab === 'filtering' && (
+          <div className="space-y-6">
+            {/* Geographic Filtering - REMOVED: Backend not implemented yet */}
+            {/* TODO: Re-enable when backend implementation is complete */}
+
+            {/* Network Restrictions (Moved from Security) */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <Shield className="w-5 h-5 text-orange-500" />
                     Network Restrictions
-                  </h3>
+              </h2>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                     Control which network types can access the phishing page. Blocking VPNs/Proxies can improve targeting but may reduce success rate.
                   </p>
@@ -864,97 +1060,117 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Sandbox Detection Patterns */}
-                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-purple-500" />
-                    Sandbox Detection Patterns
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Built-in patterns for detecting email security vendor sandboxes
-                  </p>
-                  
-                  {/* Pattern Statistics */}
-                  {stats && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                        <div className="text-sm text-gray-600 dark:text-gray-400">Total Patterns</div>
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.totalPatterns || 30}</div>
+            {/* Auto-Language Toggle */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Language Settings
+              </h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900 dark:text-white">Auto-Detect Language</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Automatically detect visitor language from browser settings
                       </div>
-                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                        <div className="text-sm text-gray-600 dark:text-gray-400">Vendors</div>
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.totalVendors || 30}</div>
                       </div>
-                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                        <div className="text-sm text-gray-600 dark:text-gray-400">Regions</div>
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.totalRegions || 11}</div>
+                  <label className="relative inline-flex items-center cursor-pointer ml-4">
+                    <input
+                      type="checkbox"
+                      checked={settings.templates?.loadingPageLanguage === 'auto'}
+                      onChange={(e) => updateSetting('templates.loadingPageLanguage', e.target.checked ? 'auto' : 'en')}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-300 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
                       </div>
-                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                        <div className="text-sm text-gray-600 dark:text-gray-400">User Agents</div>
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.totalUserAgents || 123}</div>
                       </div>
                     </div>
-                  )}
-                  
-                  {/* Info Box - Built-in Patterns */}
-                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700/50 rounded-lg mb-4">
-                    <div className="flex gap-3">
-                      <Info className="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
-                      <div className="text-sm text-purple-800 dark:text-purple-200">
-                        <div className="font-medium mb-1">Built-in Detection Patterns</div>
-                        <div className="text-purple-700 dark:text-purple-300">
-                          Patterns are hardcoded into the system and cover major email security vendors 
-                          (Proofpoint, Mimecast, Barracuda, etc.). Updates are included with new software releases.
+
+            {/* Device Access Control - Compact at Bottom */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Device Access Control</h2>
                         </div>
-                      </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  System detects device type automatically
                     </div>
                   </div>
                   
-                  {/* View Details Link */}
-                  <Link
-                    href="/mamacita/patterns"
-                    className="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-                  >
-                    View detailed pattern list
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
+              <div className="mb-3 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded text-xs text-amber-800 dark:text-amber-200">
+                <AlertCircle className="w-3 h-3 inline mr-1" />
+                Blocked devices will receive 403 Forbidden
                 </div>
 
-                {/* Stealth Verification Settings */}
-                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Stealth Verification Settings
-                  </h3>
-                  <div className="space-y-4">
+              <div className="flex flex-wrap gap-3">
+                {/* Desktop */}
+                <div className="flex-1 min-w-[140px] flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Bot Score Threshold: {settings.security.stealthVerification.botScoreThreshold}
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={settings.security.stealthVerification.botScoreThreshold}
-                        onChange={(e) => updateSetting('security.stealthVerification.botScoreThreshold', Number(e.target.value))}
-                        className="w-full"
-                      />
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">Desktop</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Windows, Mac, Linux</div>
                     </div>
                   </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.filtering?.device?.desktop !== false}
+                      onChange={(e) => updateSetting('filtering.device.desktop', e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-5 bg-gray-300 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
                 </div>
+
+                {/* Mobile */}
+                <div className="flex-1 min-w-[140px] flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">Mobile</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">iOS, Android</div>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                      type="checkbox"
+                      checked={settings.filtering?.device?.mobile !== false}
+                      onChange={(e) => updateSetting('filtering.device.mobile', e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-5 bg-gray-300 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                    </div>
+
+                {/* Tablet */}
+                <div className="flex-1 min-w-[140px] flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">Tablet</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">iPad, Android</div>
+                  </div>
+                </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.filtering?.device?.tablet !== false}
+                      onChange={(e) => updateSetting('filtering.device.tablet', e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-5 bg-gray-300 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
               </div>
             </div>
           </div>
-        )}
-
-        {/* Filtering Tab */}
-        {activeTab === 'filtering' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Filtering Configuration
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Filtering configuration will be implemented here
-            </p>
           </div>
         )}
 
@@ -986,8 +1202,8 @@ export default function SettingsPage() {
                   <div className="font-medium mb-1">Template Management System</div>
                   <div className="text-blue-700 dark:text-blue-300">
                     The full template management system is available at{' '}
-                    <Link href="/admin/templates" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
-                      /admin/templates
+                    <Link href="/mamacita/templates" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                      /mamacita/templates
                     </Link>
                     . You can create, edit, preview, and manage all your phishing page templates there.
                   </div>
@@ -1110,7 +1326,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="url"
-                value={settings?.redirects?.defaultUrl || 'https://www.google.com'}
+                value={settings?.redirects?.defaultUrl || ''}
                 onChange={(e) => updateSetting('redirects.defaultUrl', e.target.value)}
                 placeholder="https://www.google.com"
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1175,7 +1391,7 @@ export default function SettingsPage() {
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Time to show "Password confirmed" before redirect (5-30 seconds, default: 10)
+                Time to show &quot;Password confirmed&quot; before redirect (5-30 seconds, default: 10)
               </p>
             </div>
 

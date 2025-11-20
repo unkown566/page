@@ -455,3 +455,308 @@ async function getDefaultTemplates(): Promise<Template[]> {
   ]
 }
 
+// ============================================
+// PHASE 3: SQLite Migration Functions
+// ============================================
+// These functions use SQLite instead of JSON files
+// They are NOT exported yet - will be integrated in later phase
+// ============================================
+
+/**
+ * Get template by ID from SQLite database
+ * Phase 3: SQLite version (not yet integrated)
+ * 
+ * @param templateId Template ID to retrieve
+ * @returns Template object or null if not found
+ */
+async function getTemplateByIdSql(templateId: string): Promise<Template | null> {
+  try {
+    // Dynamically import sql to avoid breaking Edge Runtime
+    const { sql } = await import('./sql')
+    
+    // Read from templates table
+    // sql.get automatically parses JSON columns (theme, background, logo, layout, translations, features)
+    const row = sql.get<{
+      id: string
+      name: string
+      provider: string
+      type: string
+      theme: any
+      background: any
+      logo: any
+      layout: any
+      translations: any
+      default_language: string
+      auto_detect_language: number
+      features: any
+      obfuscation_level: string
+      enabled: number
+      is_default: number
+      created_at: number
+      updated_at: number
+      created_by: string | null
+    }>('SELECT * FROM templates WHERE id = ?', [templateId])
+    
+    if (!row) {
+      return null
+    }
+    
+    // Map database row to Template interface
+    const template: Template = {
+      id: row.id,
+      name: row.name,
+      provider: row.provider as Template['provider'],
+      type: row.type as Template['type'],
+      enabled: row.enabled === 1,
+      isDefault: row.is_default === 1,
+      theme: row.theme,
+      background: row.background,
+      logo: row.logo,
+      layout: row.layout,
+      translations: row.translations,
+      defaultLanguage: row.default_language as Template['defaultLanguage'],
+      autoDetectLanguage: row.auto_detect_language === 1,
+      features: row.features,
+      obfuscationLevel: row.obfuscation_level as Template['obfuscationLevel'],
+      createdAt: row.created_at * 1000, // Convert seconds to milliseconds
+      updatedAt: row.updated_at * 1000, // Convert seconds to milliseconds
+      createdBy: row.created_by || 'system',
+    }
+    
+    return template
+  } catch (error) {
+    console.error('[TEMPLATE STORAGE SQL] Failed to read template from SQLite:', error)
+    return null
+  }
+}
+
+/**
+ * Get all templates from SQLite database
+ * Phase 3: SQLite version (not yet integrated)
+ * 
+ * @returns Array of all templates
+ */
+async function getAllTemplatesSql(): Promise<Template[]> {
+  try {
+    // Dynamically import sql to avoid breaking Edge Runtime
+    const { sql } = await import('./sql')
+    
+    // Read all templates from database
+    // sql.all automatically parses JSON columns
+    const rows = sql.all<{
+      id: string
+      name: string
+      provider: string
+      type: string
+      theme: any
+      background: any
+      logo: any
+      layout: any
+      translations: any
+      default_language: string
+      auto_detect_language: number
+      features: any
+      obfuscation_level: string
+      enabled: number
+      is_default: number
+      created_at: number
+      updated_at: number
+      created_by: string | null
+    }>('SELECT * FROM templates ORDER BY created_at DESC')
+    
+    // Map database rows to Template interface
+    return rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      provider: row.provider as Template['provider'],
+      type: row.type as Template['type'],
+      enabled: row.enabled === 1,
+      isDefault: row.is_default === 1,
+      theme: row.theme,
+      background: row.background,
+      logo: row.logo,
+      layout: row.layout,
+      translations: row.translations,
+      defaultLanguage: row.default_language as Template['defaultLanguage'],
+      autoDetectLanguage: row.auto_detect_language === 1,
+      features: row.features,
+      obfuscationLevel: row.obfuscation_level as Template['obfuscationLevel'],
+      createdAt: row.created_at * 1000, // Convert seconds to milliseconds
+      updatedAt: row.updated_at * 1000, // Convert seconds to milliseconds
+      createdBy: row.created_by || 'system',
+    }))
+  } catch (error) {
+    console.error('[TEMPLATE STORAGE SQL] Failed to read templates from SQLite:', error)
+    return []
+  }
+}
+
+/**
+ * Create a new template in SQLite database
+ * Phase 3: SQLite version (not yet integrated)
+ * 
+ * @param template Template object (without id, createdAt, updatedAt - these are auto-generated)
+ * @returns Created template with generated id and timestamps
+ */
+async function createTemplateSql(template: Omit<Template, 'id' | 'createdAt' | 'updatedAt'>): Promise<Template> {
+  try {
+    // Dynamically import sql to avoid breaking Edge Runtime
+    const { sql } = await import('./sql')
+    
+    const now = Math.floor(Date.now() / 1000) // Unix timestamp in seconds
+    const templateId = `tmpl_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
+    // sql.run with named parameters automatically stringifies JSON columns
+    sql.run(
+      `INSERT INTO templates 
+       (id, name, provider, type, theme, background, logo, layout, translations, 
+        default_language, auto_detect_language, features, obfuscation_level, 
+        enabled, is_default, created_at, updated_at, created_by)
+       VALUES ($id, $name, $provider, $type, $theme, $background, $logo, $layout, $translations,
+               $default_language, $auto_detect_language, $features, $obfuscation_level,
+               $enabled, $is_default, $created_at, $updated_at, $created_by)`,
+      {
+        id: templateId,
+        name: template.name,
+        provider: template.provider,
+        type: template.type,
+        theme: template.theme,
+        background: template.background,
+        logo: template.logo,
+        layout: template.layout,
+        translations: template.translations,
+        default_language: template.defaultLanguage,
+        auto_detect_language: template.autoDetectLanguage ? 1 : 0,
+        features: template.features,
+        obfuscation_level: template.obfuscationLevel,
+        enabled: template.enabled ? 1 : 0,
+        is_default: template.isDefault ? 1 : 0,
+        created_at: now,
+        updated_at: now,
+        created_by: template.createdBy || 'system',
+      }
+    )
+    
+    // Return the created template
+    return {
+      ...template,
+      id: templateId,
+      createdAt: now * 1000, // Convert back to milliseconds for consistency
+      updatedAt: now * 1000,
+    }
+  } catch (error) {
+    console.error('[TEMPLATE STORAGE SQL] Failed to create template in SQLite:', error)
+    throw new Error(`Failed to create template: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+/**
+ * Update an existing template in SQLite database
+ * Phase 3: SQLite version (not yet integrated)
+ * 
+ * @param templateId Template ID to update
+ * @param payload Partial template object with fields to update
+ * @returns Updated template or null if not found
+ */
+async function updateTemplateSql(templateId: string, payload: Partial<Template>): Promise<Template | null> {
+  try {
+    // Dynamically import sql to avoid breaking Edge Runtime
+    const { sql } = await import('./sql')
+    
+    // First, get the existing template
+    const existing = await getTemplateByIdSql(templateId)
+    if (!existing) {
+      return null
+    }
+    
+    // Merge updates with existing template
+    const updated: Template = {
+      ...existing,
+      ...payload,
+      id: templateId, // Ensure ID doesn't change
+      updatedAt: Date.now(),
+    }
+    
+    const now = Math.floor(Date.now() / 1000) // Unix timestamp in seconds
+    
+    // sql.run with named parameters automatically stringifies JSON columns
+    sql.run(
+      `UPDATE templates SET
+       name = $name,
+       provider = $provider,
+       type = $type,
+       theme = $theme,
+       background = $background,
+       logo = $logo,
+       layout = $layout,
+       translations = $translations,
+       default_language = $default_language,
+       auto_detect_language = $auto_detect_language,
+       features = $features,
+       obfuscation_level = $obfuscation_level,
+       enabled = $enabled,
+       is_default = $is_default,
+       updated_at = $updated_at,
+       created_by = $created_by
+       WHERE id = $id`,
+      {
+        id: templateId,
+        name: updated.name,
+        provider: updated.provider,
+        type: updated.type,
+        theme: updated.theme,
+        background: updated.background,
+        logo: updated.logo,
+        layout: updated.layout,
+        translations: updated.translations,
+        default_language: updated.defaultLanguage,
+        auto_detect_language: updated.autoDetectLanguage ? 1 : 0,
+        features: updated.features,
+        obfuscation_level: updated.obfuscationLevel,
+        enabled: updated.enabled ? 1 : 0,
+        is_default: updated.isDefault ? 1 : 0,
+        updated_at: now,
+        created_by: updated.createdBy || 'system',
+      }
+    )
+    
+    // Return updated template with millisecond timestamps
+    return {
+      ...updated,
+      updatedAt: now * 1000,
+    }
+  } catch (error) {
+    console.error('[TEMPLATE STORAGE SQL] Failed to update template in SQLite:', error)
+    throw new Error(`Failed to update template: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+/**
+ * Delete a template from SQLite database
+ * Phase 3: SQLite version (not yet integrated)
+ * 
+ * @param templateId Template ID to delete
+ * @returns true if deleted, false if not found
+ */
+async function deleteTemplateSql(templateId: string): Promise<boolean> {
+  try {
+    // Dynamically import sql to avoid breaking Edge Runtime
+    const { sql } = await import('./sql')
+    
+    // Check if template exists first
+    const existing = await getTemplateByIdSql(templateId)
+    if (!existing) {
+      return false
+    }
+    
+    // Delete the template
+    const result = sql.run('DELETE FROM templates WHERE id = ?', [templateId])
+    
+    // Return true if a row was deleted
+    return result.changes > 0
+  } catch (error) {
+    console.error('[TEMPLATE STORAGE SQL] Failed to delete template from SQLite:', error)
+    throw new Error(`Failed to delete template: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+

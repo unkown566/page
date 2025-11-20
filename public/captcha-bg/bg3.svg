@@ -1,0 +1,18 @@
+<svg width="1920" height="1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="softGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0f9ff;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#e0f2fe;stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#bae6fd;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7dd3fc;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="softGlow" cx="50%" cy="30%">
+      <stop offset="0%" style="stop-color:rgba(147,197,253,0.4);stop-opacity:1" />
+      <stop offset="100%" style="stop-color:rgba(147,197,253,0);stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#softGradient)"/>
+  <ellipse cx="960" cy="300" rx="600" ry="400" fill="url(#softGlow)"/>
+</svg>
+
+

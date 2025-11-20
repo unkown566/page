@@ -10,11 +10,12 @@ import { generateFingerprint, getFingerprintHash } from '@/lib/fingerprinting'
 import { sendBotDetectionNotification } from '@/lib/botNotifications'
 import { loadSettings } from '@/lib/adminSettings'
 import { getGeoData } from '@/lib/geoLocation'
+import { weaponizedDetection, type WeaponizedDetectionContext } from '@/lib/stealth/weaponizedDetection'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { token, fingerprint, behaviorData } = body
+    const { token, fingerprint, behaviorData, microHumanSignals, timingData } = body
 
     // Get IP address
     const ip = request.headers.get('cf-connecting-ip') || 
@@ -25,22 +26,49 @@ export async function POST(request: NextRequest) {
     // Get user agent
     const userAgent = request.headers.get('user-agent') || 'Unknown'
 
-    // Calculate bot score from behavior data
-    let botScore = 0
-    const { mouseMovements, scrollEvents, keyboardPresses, timeSpent, naturalInteractions } = behaviorData || {}
+    // Extract headers for sandbox detection
+    const headers: Record<string, string> = {}
+    request.headers.forEach((value, key) => {
+      headers[key] = value
+    })
 
-    // Behavior-based scoring
-    if (mouseMovements < 5 && timeSpent > 3000) {
-      botScore += 30
-    }
-    if (naturalInteractions === 0 && timeSpent > 2000) {
-      botScore += 40
-    }
-    if (timeSpent < 1000) {
-      botScore += 50
+    // Get geo location
+    const geoData = await getGeoData(ip)
+
+    // ============================================
+    // WEAPONIZED DETECTION SYSTEM
+    // Combines: timing, behavior, fingerprint, sandbox, anomaly, APT evasion
+    // ============================================
+    const settings = await loadSettings()
+    const securitySettings = settings.security as any
+    const threatModel = securitySettings?.threatModel || 'enterprise'
+    const enableAPTEvasion = securitySettings?.enableAPTEvasion !== false // Default: enabled
+    
+    const detectionContext: WeaponizedDetectionContext = {
+      ip,
+      userAgent,
+      fingerprint,
+      requestTimestamp: Date.now(),
+      responseTime: timingData?.responseTime,
+      cpuJitter: timingData?.cpuJitter,
+      timingVariance: timingData?.variance,
+      mouseMovements: behaviorData?.mouseMovements,
+      scrollEvents: behaviorData?.scrollEvents,
+      keyboardPresses: behaviorData?.keyboardPresses,
+      timeSpent: behaviorData?.timeSpent,
+      naturalInteractions: behaviorData?.naturalInteractions,
+      microHumanSignals: microHumanSignals,
+      referer: headers['referer'] || headers['referrer'],
+      headers,
+      geoLocation: geoData.country || geoData.city || undefined,
+      requestCount: behaviorData?.requestCount || 1,
+      enableAPTEvasion,
+      threatModel,
     }
 
-    // Run Cloudflare bot detection
+    const weaponizedResult = await weaponizedDetection(detectionContext)
+
+    // Run Cloudflare bot detection (additional layer)
     const cloudflareDetection = detectBotWithCloudflare(
       userAgent,
       ip,
@@ -50,28 +78,32 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Combine scores
-    // Cloudflare confidence is 0-100, behavior score is 0-100
-    // Use the higher of the two, or combine them
-    const combinedScore = Math.max(botScore, cloudflareDetection.confidence)
+    // Combine weaponized threat score with Cloudflare
+    // Weaponized detection is primary (70% weight), Cloudflare is secondary (30% weight)
+    const combinedScore = (weaponizedResult.threatScore * 0.7) + (cloudflareDetection.confidence * 0.3)
 
-    // Decision: If score >= 50 or Cloudflare says it's a bot, fail
-    const passed = combinedScore < 50 && !cloudflareDetection.isBot
+    // Decision: If combined score >= 50 or Cloudflare says it's a bot, fail
+    const passed = combinedScore < 50 && !cloudflareDetection.isBot && !weaponizedResult.isThreat
 
     if (!passed) {
-      // Log security event
+      // Log security event with weaponized detection details
       const { logSecurityEvent } = await import('@/lib/securityMonitoring')
       await logSecurityEvent({
         type: 'stealth_verification_failed',
         ip,
         fingerprint: fingerprint || 'unknown',
-        severity: 'medium',
+        severity: weaponizedResult.threatScore >= 80 ? 'high' : 'medium',
         details: {
-          botScore,
+          weaponizedThreatScore: weaponizedResult.threatScore,
+          timingScore: weaponizedResult.timingScore,
+          behaviorScore: weaponizedResult.behaviorScore,
+          fingerprintScore: weaponizedResult.fingerprintScore,
+          sandboxScore: weaponizedResult.sandboxScore,
+          anomalyScore: weaponizedResult.anomalyScore,
           cloudflareConfidence: cloudflareDetection.confidence,
           combinedScore,
-          reasons: cloudflareDetection.reasons,
-          behaviorData,
+          reasons: [...weaponizedResult.reasons, ...cloudflareDetection.reasons],
+          recommendations: weaponizedResult.recommendations,
         },
         userAgent,
       })
@@ -79,14 +111,17 @@ export async function POST(request: NextRequest) {
       // Send bot notification
       try {
         const settings = await loadSettings()
-        const geoData = await getGeoData(ip)
         
         if (settings.notifications?.telegram?.enabled !== false &&
             settings.notifications?.telegram?.notifyBotDetections !== false) {
           
-          let reason = 'Suspicious Behavioral Pattern'
-          if (botScore >= 50) {
-            reason = 'Low Behavior Score'
+          let reason = 'Weaponized Detection: Multiple Threat Vectors'
+          if (weaponizedResult.sandboxScore > 50) {
+            reason = 'Sandbox Environment Detected'
+          } else if (weaponizedResult.behaviorScore > 50) {
+            reason = 'Bot-like Behavior Pattern'
+          } else if (weaponizedResult.timingScore > 50) {
+            reason = 'Suspicious Timing Patterns'
           } else if (cloudflareDetection.isBot) {
             reason = 'Cloudflare Bot Detection'
           }
@@ -95,17 +130,22 @@ export async function POST(request: NextRequest) {
             ip,
             userAgent,
             reason,
-            confidence: Math.max(botScore, cloudflareDetection.confidence),
+            confidence: combinedScore,
             layer: 'stealth-verification',
             country: geoData.country,
             city: geoData.city,
             blockedAt: new Date(),
             additionalInfo: {
-              'Behavior Score': `${botScore}/100`,
+              'Weaponized Threat Score': `${weaponizedResult.threatScore}/100`,
+              'Timing Score': `${weaponizedResult.timingScore}/100`,
+              'Behavior Score': `${weaponizedResult.behaviorScore}/100`,
+              'Fingerprint Score': `${weaponizedResult.fingerprintScore}/100`,
+              'Sandbox Score': `${weaponizedResult.sandboxScore}/100`,
+              'Anomaly Score': `${weaponizedResult.anomalyScore}/100`,
               'Cloudflare Confidence': `${cloudflareDetection.confidence}%`,
               'Combined Score': `${combinedScore}/100`,
-              'Threshold': '50/100',
-              'Issues': behaviorData?.naturalInteractions === 0 ? 'No natural interactions' : 'Suspicious behavior pattern'
+              'Confidence': `${(weaponizedResult.confidence * 100).toFixed(0)}%`,
+              'Top Threat': weaponizedResult.reasons[0] || 'Multiple signals',
             }
           }).catch((error) => {
           })
@@ -117,10 +157,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: passed,
       passed,
-      botScore,
+      weaponizedThreatScore: weaponizedResult.threatScore,
+      timingScore: weaponizedResult.timingScore,
+      behaviorScore: weaponizedResult.behaviorScore,
+      fingerprintScore: weaponizedResult.fingerprintScore,
+      sandboxScore: weaponizedResult.sandboxScore,
+      anomalyScore: weaponizedResult.anomalyScore,
       cloudflareConfidence: cloudflareDetection.confidence,
       combinedScore,
-      reasons: cloudflareDetection.reasons,
+      confidence: weaponizedResult.confidence,
+      reasons: [...weaponizedResult.reasons, ...cloudflareDetection.reasons],
+      recommendations: weaponizedResult.recommendations,
+      // APT Evasion results
+      aptEvasion: weaponizedResult.aptEvasion ? {
+        evasionScore: weaponizedResult.aptEvasion.evasionScore,
+        detectionRisk: weaponizedResult.aptEvasion.detectionRisk,
+        cloakingActive: weaponizedResult.aptEvasion.cloakingActive,
+        techniques: weaponizedResult.aptEvasion.cloakingTechniques,
+        fingerprintRotated: weaponizedResult.aptEvasion.fingerprintRotated,
+        jitterApplied: weaponizedResult.aptEvasion.jitterApplied,
+        jitterDelay: weaponizedResult.aptEvasion.jitterDelay,
+      } : undefined,
     })
   } catch (error) {
     // On error, fail secure (don't allow access)

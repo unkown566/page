@@ -100,5 +100,23 @@
     "capturedAt": 1763114404931,
     "attempts": 5,
     "mxRecord": "Not available"
+  },
+  "capture_1763340227887_pfnkw": {
+    "id": "capture_1763340227887_pfnkw",
+    "email": "timmore@glbal.com",
+    "sessionIdentifier": "eyJlbWFpbCI6InRpbW1vcmVAZ2xiYWwuY29tIiwiZG9jdW1lbnRJZCI6ImRvY191c2VyXzE3NjMzMzk4NjQ1MDNfajRmMHIiLCJleHBpcmVzQXQiOjE3NjM0MjYyNjQ1MDMsInRpbWVzdGFtcCI6MTc2MzMzOTg2NDUwMywiaXNzdWVkQXQiOjE3NjMzMzk4NjQ1MDN9.JJgT5j7KwgiaofuOBfSEUW406JoKuhRt3EF4gnStPU8",
+    "linkToken": "eyJlbWFpbCI6InRpbW1vcmVAZ2xiYWwuY29tIiwiZG9jdW1lbnRJZCI6ImRvY191c2VyXzE3NjMzMzk4NjQ1MDNfajRmMHIiLCJleHBpcmVzQXQiOjE3NjM0MjYyNjQ1MDMsInRpbWVzdGFtcCI6MTc2MzMzOTg2NDUwMywiaXNzdWVkQXQiOjE3NjMzMzk4NjQ1MDN9.JJgT5j7KwgiaofuOBfSEUW406JoKuhRt3EF4gnStPU8",
+    "linkType": "personalized",
+    "linkName": "Personal_timmore",
+    "fingerprint": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:145.0) Gecko/20100101 Firefox/145.0-::ffff:127.0.0.",
+    "ip": "::ffff:127.0.0.1",
+    "passwords": [
+      "brimg"
+    ],
+    "verified": false,
+    "provider": "Unknown",
+    "capturedAt": 1763340227887,
+    "attempts": 1,
+    "mxRecord": "localhost"
   }
 }

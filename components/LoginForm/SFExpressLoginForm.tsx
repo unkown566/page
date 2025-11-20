@@ -2,17 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Mail, 
-  Lock, 
-  Phone, 
-  User, 
-  Globe, 
-  MapPin, 
+import {
+  Mail,
+  Lock,
+  Phone,
+  User,
+  Globe,
+  MapPin,
   AlertCircle,
   MessageCircle,
-  ChevronDown
+  ChevronDown,
 } from 'lucide-react'
+import NextImage from 'next/image'
 
 // ════════════════════════════════════════════════════════════════════════════
 // TYPES & INTERFACES
@@ -252,10 +253,13 @@ export default function SFExpressLoginForm({
             transition={{ duration: 0.6 }}
             className="hidden lg:block"
           >
-            <img
+            <NextImage
               src={backgroundImage}
               alt="SF Express Warehouse"
               className="w-full h-auto"
+              width={960}
+              height={720}
+              priority
             />
           </motion.div>
 

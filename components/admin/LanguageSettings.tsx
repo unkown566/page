@@ -29,7 +29,7 @@ export default function LanguageSettings({ currentLanguage, onChange }: Language
       </div>
 
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-        Choose the language for loading page templates. Auto-detect will use the visitor's location (IP-based).
+        Choose the language for loading page templates. Auto-detect will use the visitor&apos;s location (IP-based).
       </p>
 
       <div className="space-y-2">
@@ -67,4 +67,9 @@ export default function LanguageSettings({ currentLanguage, onChange }: Language
     </div>
   )
 }
+
+
+
+
+
 

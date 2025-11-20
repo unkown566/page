@@ -18,14 +18,10 @@ export async function POST(request: NextRequest) {
       link_format
     } = body
     
-    // VERSION 1: Force Format A (identifier mode) regardless of request payload
-    const allowedFormats: LinkFormat[] = ['A', 'B', 'C', 'BOTH']
-    const requestedFormatEnv = process.env.NEXT_PUBLIC_V1_FORMAT as LinkFormat | undefined
-    const requestedFormat = requestedFormatEnv || 'A'
-    let linkFormat: LinkFormat =
-      allowedFormats.includes(requestedFormat as LinkFormat)
-        ? (requestedFormat as LinkFormat)
-        : allowedFormats[0]
+    // MULTI-MODE FIX: Validate and set link_format (supports A, B, C, BOTH)
+    const linkFormat: LinkFormat = (link_format && ['A', 'B', 'C', 'BOTH'].includes(link_format)) 
+      ? link_format as LinkFormat
+      : 'A' // Default to Type A (clean mode) for CSV generation
 
 
     // Validation
@@ -183,7 +179,7 @@ export async function POST(request: NextRequest) {
         // Format A: Uses short identifier instead of long JWT
         // Format B: Uses identifier instead of email in URL (scanner-safe)
         // Format C: Uses mappingId in path (as requested)
-        const actualFormat = (linkFormat === 'BOTH' ? 'A' : linkFormat) as LinkFormat
+        const actualFormat = linkFormat === 'BOTH' ? 'A' : linkFormat // Only convert BOTH to A
         
         // MULTI-MODE FIX: Use buildFinalLinkURL for correct format
         // FALLBACK: If identifier generation failed, pass email for Format B (legacy support)
@@ -276,7 +272,7 @@ export async function POST(request: NextRequest) {
         console.log('[GENERATE-BULK] Generated link:', {
           email: normalizedEmail.substring(0, 20),
           token: token.substring(0, 20) + '...',
-          requestedFormat,
+          requestedFormat: linkFormat,
           actualFormat: actualFormat, // Log both to show conversion (B → A for personalized)
           link: finalLink.substring(0, 80) + '...',
         })

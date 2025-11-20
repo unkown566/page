@@ -23,7 +23,15 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "RANDOM FILES",
+    "RANDOM FILES/**/*",
+    "ARCHIVE_TEMP/**",
+    "**/*.backup.ts",
+    "**/*.bak.ts",
+    "**/*.md"
+  ]
 }
 
 

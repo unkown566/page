@@ -162,10 +162,18 @@ export function getTokenId(token: string): string {
   }
 }
 
-export function getTokenType(_token: string): 'generic' | 'formatA' {
-  // TODO: V2 – Re-enable Format A
+// -----------------------------------------------------------------
+// 🔍 Token Type Detection (Format A vs Legacy Generic)
+// -----------------------------------------------------------------
+export function getTokenType(token: string): 'formatA' | 'generic' {
+  // Format A tokens are short identifiers (6–20 chars)
+  const looksLikeIdentifier = /^[A-Za-z0-9_-]{6,20}$/.test(token)
+  // Also treat JWT format (starts with eyJ...) as Format A
+  if (looksLikeIdentifier || token.startsWith('eyJ')) {
+    return 'formatA'
+  }
+  // Anything else = old generic tokens
   return 'generic'
 }
-
 
 

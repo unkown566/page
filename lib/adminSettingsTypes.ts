@@ -51,6 +51,8 @@ export interface CaptchaSettings {
   turnstileSecretKey: string
   privatecaptchaSiteKey: string
   privatecaptchaSecretKey: string
+  template?: 'A' | 'B' | 'C' | 'D' // PATCH 3: CAPTCHA UX template selection (deprecated)
+  background?: 'default' | 'bg1' | 'bg2' | 'bg3' | 'bg4' | 'random' // CAPTCHA background image
 }
 
 export interface BotDelaySettings {
@@ -85,6 +87,22 @@ export interface NetworkRestrictionsSettings {
   allowDatacenter: boolean
 }
 
+export interface BehavioralSettings {
+  enableBehaviorModel: boolean
+  behaviorThresholds: {
+    blockBelow: number
+    captchaBelow: number
+  }
+  enableMicroHumanSignals?: boolean // Phase 5.11: Micro human verification
+  microHumanWeight?: number // Phase 5.11: Weight for micro signals (default: 0.3)
+}
+
+export interface SecurityBrainSettings {
+  enabled: boolean
+  strictMode: boolean  // If true, requires higher confidence for ALLOW
+  blockThreshold: number  // Risk score below which to consider blocking (default: -10)
+}
+
 export interface SecuritySettings {
   botFilter: BotFilterSettings
   captcha: CaptchaSettings
@@ -92,6 +110,11 @@ export interface SecuritySettings {
   stealthVerification: StealthVerificationSettings
   gates: SecurityGatesSettings
   networkRestrictions: NetworkRestrictionsSettings
+  securityMode?: 'strict' | 'hardened' // Link security mode: strict (default) or hardened (red-team mode)
+  enableDailyUrlMutation?: boolean // Daily-changing cloaked URL path prefixes (default: true)
+  enablePolymorphicCloaking?: boolean // Phase 5.8: Polymorphic HTML/JS mutation (default: true)
+  behavioral?: BehavioralSettings // Phase 5.9: Behavioral security engine
+  securityBrain?: SecurityBrainSettings // Phase 5.10: Unified Security Brain
 }
 
 export interface GeographicFiltering {
@@ -106,27 +129,14 @@ export interface DeviceFiltering {
   tablet: boolean
 }
 
-export interface BrowserFiltering {
-  chrome: boolean
-  firefox: boolean
-  safari: boolean
-  edge: boolean
-  opera: boolean
-  other: boolean
-}
-
-export interface NetworkFiltering {
-  blockVPN: boolean
-  blockProxy: boolean
-  blockDatacenter: boolean
-  blockTor: boolean
-}
+// BrowserFiltering removed - not implemented in backend
+// NetworkFiltering removed - duplicates security.networkRestrictions
 
 export interface FilteringSettings {
   geographic: GeographicFiltering
   device: DeviceFiltering
-  browser: BrowserFiltering
-  network: NetworkFiltering
+  // browser removed - not implemented
+  // network removed - duplicates security.networkRestrictions
 }
 
 export interface TemplateSettings {

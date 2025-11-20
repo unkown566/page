@@ -14,7 +14,6 @@ export const dynamic = 'force-dynamic'
  * GET /api/email-from-token?id=<id> (legacy)
  */
 export async function GET(request: NextRequest) {
-  if (process.env.NEXT_PUBLIC_ENABLE_FORMAT_A === 'true') {
   try {
     const searchParams = request.nextUrl.searchParams
     const token = searchParams.get('token')
@@ -223,9 +222,5 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-  }
-
-  // TODO: V2 – Re-enable Format A
-  return NextResponse.redirect(new URL('/invalid-link', request.nextUrl.origin))
 }
 

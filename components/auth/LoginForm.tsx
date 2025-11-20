@@ -37,7 +37,7 @@ export default function LoginForm({ foxId }: LoginFormProps) {
       }
 
       // Login successful
-      window.location.href = '/admin' // Redirect to dashboard
+      window.location.href = '/mamacita' // Redirect to dashboard
     } catch (err: any) {
       setError(err.message || 'Login failed')
     } finally {
@@ -170,7 +170,7 @@ export default function LoginForm({ foxId }: LoginFormProps) {
 
       {/* Sign Up Link */}
       <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-        Don't have an account?{' '}
+        Don&apos;t have an account?{' '}
         <Link
           href="/auth/signup"
           className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
@@ -181,4 +181,9 @@ export default function LoginForm({ foxId }: LoginFormProps) {
     </form>
   )
 }
+
+
+
+
+
 

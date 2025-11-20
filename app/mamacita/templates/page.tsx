@@ -160,7 +160,7 @@ export default function TemplatesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
             <div>
               <div className="font-semibold text-blue-400 mb-1">🎨 Automatic Selection</div>
-              <div>Templates are automatically chosen based on the victim's email domain (e.g., @biglobe.ne.jp → BIGLOBE template)</div>
+              <div>Templates are automatically chosen based on the victim&apos;s email domain (e.g., @biglobe.ne.jp → BIGLOBE template)</div>
             </div>
             <div>
               <div className="font-semibold text-blue-400 mb-1">🌐 Multi-Language</div>

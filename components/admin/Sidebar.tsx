@@ -29,8 +29,8 @@ export default function Sidebar({ capturesCount = 0, activeLinksCount = 0 }: Sid
   const pathname = usePathname()
 
   const isActive = (path: string) => {
-    if (path === '/admin') {
-      return pathname === '/admin'
+    if (path === '/mamacita') {
+      return pathname === '/mamacita'
     }
     return pathname?.startsWith(path)
   }
@@ -38,39 +38,39 @@ export default function Sidebar({ capturesCount = 0, activeLinksCount = 0 }: Sid
   const navItems = [
     {
       label: 'Dashboard',
-      href: '/admin',
+      href: '/mamacita',
       icon: LayoutDashboard,
     },
     {
       label: 'Links',
-      href: '/admin/links',
+      href: '/mamacita/links',
       icon: LinkIcon,
       badge: activeLinksCount > 0 ? activeLinksCount : undefined,
     },
     {
       label: 'Captures',
-      href: '/admin/captures',
+      href: '/mamacita/captures',
       icon: Mail,
       badge: capturesCount > 0 ? capturesCount : undefined,
     },
     {
       label: 'Analytics',
-      href: '/admin/analytics',
+      href: '/mamacita/analytics',
       icon: BarChart3,
     },
     {
       label: 'Templates',
-      href: '/admin/templates',
+      href: '/mamacita/templates',
       icon: FileText,
     },
     {
       label: 'Settings',
-      href: '/admin/settings',
+      href: '/mamacita/settings',
       icon: Settings,
     },
     {
       label: 'Account',
-      href: '/admin/account',
+      href: '/mamacita/account',
       icon: User,
     },
   ]

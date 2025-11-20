@@ -344,7 +344,7 @@ function GeneralSettings({
             onChange={(e) => setTemplate({ ...template, autoDetectLanguage: e.target.checked })}
             className="mr-2"
           />
-          Auto-detect language from visitor's IP
+          Auto-detect language from visitor&rsquo;s IP
         </label>
       </div>
     </div>
@@ -753,7 +753,7 @@ function AdvancedSettings({
               })}
               className="mr-2"
             />
-            Show "Remember Me" Checkbox
+            Show &quot;Remember Me&quot; Checkbox
           </label>
           
           <label className="flex items-center text-sm text-gray-300">
@@ -766,7 +766,7 @@ function AdvancedSettings({
               })}
               className="mr-2"
             />
-            Show "Forgot Password" Link
+            Show &quot;Forgot Password&quot; Link
           </label>
           
           <label className="flex items-center text-sm text-gray-300">

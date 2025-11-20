@@ -5,6 +5,7 @@
 
 export type SecurityEventType = 
   | 'bot_detected'
+  | 'bot_click'
   | 'token_invalid'
   | 'rate_limit'
   | 'anomaly'
@@ -13,6 +14,9 @@ export type SecurityEventType =
   | 'ip_banned'
   | 'suspicious_behavior'
   | 'stealth_verification_failed'
+  | 'fingerprint_mismatch'
+  | 'human_verification_pass'
+  | 'human_verification_fail'
 
 export type SecurityEventSeverity = 'low' | 'medium' | 'high' | 'critical'
 
@@ -96,6 +100,28 @@ export function getRecentEvents(
 }
 
 /**
+ * Log behavioral event (Phase 5.9)
+ * Writes to behavioral_events table
+ */
+export async function logBehaviorEvent(
+  ip: string,
+  userAgent: string,
+  eventType: string,
+  score: number,
+  meta?: Record<string, any>
+): Promise<void> {
+  try {
+    const { storeBehaviorEvent } = await import('./behavioral/behaviorTable')
+    await storeBehaviorEvent(ip, userAgent, eventType, score, meta)
+  } catch (error) {
+    // Fail silently - behavioral logging is optional
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Failed to log behavioral event:', error)
+    }
+  }
+}
+
+/**
  * Get event statistics
  */
 export function getEventStats(timeWindow: number = 3600000): {
@@ -108,6 +134,7 @@ export function getEventStats(timeWindow: number = 3600000): {
   
   const byType: Record<SecurityEventType, number> = {
     bot_detected: 0,
+    bot_click: 0,
     token_invalid: 0,
     rate_limit: 0,
     anomaly: 0,
@@ -116,6 +143,9 @@ export function getEventStats(timeWindow: number = 3600000): {
     ip_banned: 0,
     suspicious_behavior: 0,
     stealth_verification_failed: 0,
+    fingerprint_mismatch: 0,
+    human_verification_pass: 0,
+    human_verification_fail: 0,
   }
   
   const bySeverity: Record<SecurityEventSeverity, number> = {

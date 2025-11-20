@@ -13,16 +13,48 @@ export async function GET() {
     
     // Get CAPTCHA config from admin settings, with .env fallback
     const captchaConfig = settings?.security?.captcha
+    const gatesConfig = settings?.security?.gates
+    
+    // Check if CAPTCHA is disabled via:
+    // 1. settings.security.gates.layer2Captcha === false
+    // 2. settings.security.captcha.enabled === false
+    // 3. settings.security.captcha.provider === 'none'
+    const layer2Captcha = gatesConfig?.layer2Captcha
+    const captchaEnabled = captchaConfig?.enabled
+    const captchaProvider = captchaConfig?.provider
+    
+    // CAPTCHA is disabled if any of these are true
+    const isDisabled = layer2Captcha === false || captchaEnabled === false || captchaProvider === 'none'
+    
+    // DEBUG: Log what we're checking
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[CAPTCHA-CONFIG] Checking settings:', {
+        layer2Captcha,
+        captchaEnabled,
+        captchaProvider,
+        isDisabled,
+      })
+    }
     
     const config = {
-      provider: captchaConfig?.provider || 'turnstile',
+      provider: captchaProvider || 'turnstile',
       turnstile: {
         siteKey: captchaConfig?.turnstileSiteKey || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '',
       },
       privatecaptcha: {
         siteKey: captchaConfig?.privatecaptchaSiteKey || process.env.NEXT_PUBLIC_PRIVATECAPTCHA_SITE_KEY || '',
       },
-      enabled: captchaConfig?.enabled !== false,
+      enabled: !isDisabled, // Explicitly set based on admin settings
+      // REMOVED: template selection (A/B/C/D) - using simple single CAPTCHA
+    }
+    
+    // DEBUG: Log final config
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[CAPTCHA-CONFIG] Final config:', {
+        enabled: config.enabled,
+        provider: config.provider,
+        isDisabled,
+      })
     }
     
     return NextResponse.json({
@@ -42,6 +74,7 @@ export async function GET() {
           siteKey: process.env.NEXT_PUBLIC_PRIVATECAPTCHA_SITE_KEY || '',
         },
         enabled: true,
+        // REMOVED: template selection (A/B/C/D) - using simple single CAPTCHA
       }
     })
   }

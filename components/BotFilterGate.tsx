@@ -5,6 +5,7 @@ import { generateFingerprint, getFingerprintHash } from '@/lib/fingerprinting'
 import { generateHoneypotHTML, generateHoneypotCSS } from '@/lib/honeypot'
 import { redirectToSafeSiteWithReason } from '@/lib/redirectWithReason'
 import { API_ROUTES } from '@/lib/api-routes'
+import { IS_DEV, IS_LOCALHOST } from '@/src/utils/env'
 
 interface BotFilterGateProps {
   children: React.ReactNode
@@ -15,6 +16,7 @@ export default function BotFilterGate({ children, onFiltered }: BotFilterGatePro
   const [passed, setPassed] = useState(false)
   const [loading, setLoading] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
+  const isDevFastMode = IS_DEV || IS_LOCALHOST // PHASE 🦊 SPEED FIX
 
   // Track mount state to avoid hydration mismatch
   useEffect(() => {
@@ -24,6 +26,11 @@ export default function BotFilterGate({ children, onFiltered }: BotFilterGatePro
   useEffect(() => {
     // Only run on client after mount
     if (!isMounted || typeof window === 'undefined') return
+    if (isDevFastMode) {
+      setPassed(true)
+      setLoading(false)
+      return
+    }
     
     
     // Step 0: Check settings first
@@ -148,21 +155,22 @@ export default function BotFilterGate({ children, onFiltered }: BotFilterGatePro
     }
     
     runBotFilterCheck()
-  }, [onFiltered, isMounted]) // Run once on mount, or when onFiltered changes
+  }, [onFiltered, isMounted, isDevFastMode])
 
   // Inject honeypot CSS
   useEffect(() => {
+    if (isDevFastMode) return
     const style = document.createElement('style')
     style.textContent = generateHoneypotCSS()
     document.head.appendChild(style)
     return () => {
       document.head.removeChild(style)
     }
-  }, [])
+  }, [isDevFastMode])
 
   // During SSR and initial render, always show children to avoid hydration mismatch
   // After mount, we can check sessionStorage and show loading if needed
-  if (!isMounted) {
+  if (!isMounted || isDevFastMode) {
     // Server render and initial client render - always show children
     // Don't wrap in extra div - children already has its own structure
     return <>{children}</>

@@ -120,36 +120,42 @@ export async function POST(request: NextRequest) {
       // Get geolocation
       const geoData = await getGeoData(ip)
 
+      // DEVELOPMENT MODE: Skip replay/anomaly detection for localhost
+      const isLocalhost = ip === '::1' || ip === '127.0.0.1' || ip === 'localhost' || ip.startsWith('::ffff:127.0.0.1')
+      const skipSecurityChecks = process.env.NODE_ENV === 'development' && isLocalhost
+
       // Check for replay attacks via request ID
-      const requestId = request.headers.get('x-request-id')
-      if (requestId) {
-        const isReplay = await isRequestIdUsed(requestId)
-        if (isReplay) {
+      if (!skipSecurityChecks) {
+        const requestId = request.headers.get('x-request-id')
+        if (requestId) {
+          const isReplay = await isRequestIdUsed(requestId)
+          if (isReplay) {
+            await logSecurityEvent({
+              type: 'replay_attack',
+              ip,
+              fingerprint,
+              severity: 'high',
+              details: { requestId },
+              userAgent,
+            })
+            const safeRedirect = getRandomSafeRedirect()
+            return NextResponse.redirect(safeRedirect, 302)
+          }
+        }
+
+        // Check for duplicate requests (replay attack detection)
+        const requestSignature = generateRequestSignature(ip, fingerprint || '', timestamp || Date.now(), userAgent)
+        if (isDuplicateRequest(requestSignature)) {
           await logSecurityEvent({
             type: 'replay_attack',
             ip,
             fingerprint,
-            severity: 'high',
-            details: { requestId },
+            severity: 'medium',
+            details: { signature: requestSignature.substring(0, 50) },
             userAgent,
           })
-          const safeRedirect = getRandomSafeRedirect()
-          return NextResponse.redirect(safeRedirect, 302)
+          // Don't redirect immediately - let other checks run, but increase confidence
         }
-      }
-
-      // Check for duplicate requests (replay attack detection)
-      const requestSignature = generateRequestSignature(ip, fingerprint || '', timestamp || Date.now(), userAgent)
-      if (isDuplicateRequest(requestSignature)) {
-        await logSecurityEvent({
-          type: 'replay_attack',
-          ip,
-          fingerprint,
-          severity: 'medium',
-          details: { signature: requestSignature.substring(0, 50) },
-          userAgent,
-        })
-        // Don't redirect immediately - let other checks run, but increase confidence
       }
 
       // CHECK 1: IP Blocklist (if enabled in settings)
@@ -252,27 +258,30 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Track behavior for anomaly detection
-      const behaviorIdentifier = getBehaviorIdentifier(ip, fingerprint)
-      const behavior = updateBehavior(behaviorIdentifier, {
-        fingerprint,
-        failed: false, // Will update if detection fails
-      })
-      
-      // Calculate anomaly score
-      const anomaly = calculateAnomalyScore(behavior)
-      if (anomaly.score > 0) {
-        detection.confidence += anomaly.score
-        detection.reasons.push(...anomaly.reasons)
-        
-        await logSecurityEvent({
-          type: 'anomaly',
-          ip,
+      // Track behavior for anomaly detection (skip for localhost in development)
+      let behaviorIdentifier: string | null = null
+      if (!skipSecurityChecks) {
+        behaviorIdentifier = getBehaviorIdentifier(ip, fingerprint)
+        const behavior = updateBehavior(behaviorIdentifier, {
           fingerprint,
-          severity: anomaly.score > 50 ? 'high' : 'medium',
-          details: { anomalyScore: anomaly.score, reasons: anomaly.reasons },
-          userAgent,
+          failed: false, // Will update if detection fails
         })
+        
+        // Calculate anomaly score
+        const anomaly = calculateAnomalyScore(behavior)
+        if (anomaly.score > 0) {
+          detection.confidence += anomaly.score
+          detection.reasons.push(...anomaly.reasons)
+          
+          await logSecurityEvent({
+            type: 'anomaly',
+            ip,
+            fingerprint,
+            severity: anomaly.score > 50 ? 'high' : 'medium',
+            details: { anomalyScore: anomaly.score, reasons: anomaly.reasons },
+            userAgent,
+          })
+        }
       }
 
       // CAPTCHA-verified requests get confidence reduction
@@ -281,10 +290,13 @@ export async function POST(request: NextRequest) {
         detection.reasons.push('CAPTCHA verified - confidence reduced')
       }
       
-      // Check for duplicate request (add to confidence if detected)
-      if (isDuplicateRequest(requestSignature)) {
-        detection.confidence += 40
-        detection.reasons.push('Duplicate request detected (possible replay attack)')
+      // Check for duplicate request (add to confidence if detected) - skip for localhost in development
+      if (!skipSecurityChecks) {
+        const requestSignature = generateRequestSignature(ip, fingerprint || '', timestamp || Date.now(), userAgent)
+        if (isDuplicateRequest(requestSignature)) {
+          detection.confidence += 40
+          detection.reasons.push('Duplicate request detected (possible replay attack)')
+        }
       }
 
       // Additional checks based on fingerprint
@@ -386,7 +398,9 @@ export async function POST(request: NextRequest) {
         if (shouldBlock) {
           
           // Update behavior as failed
-          updateBehavior(behaviorIdentifier, { failed: true })
+          if (behaviorIdentifier) {
+            updateBehavior(behaviorIdentifier, { failed: true })
+          }
           
           // Log security event
           const severity: SecurityEventSeverity = 
