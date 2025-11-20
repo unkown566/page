@@ -235,7 +235,10 @@ if (!ADMIN_PASSWORD) {
   // ====================================================================
   // Allow admin panel and API routes to bypass ALL security checks
   // Admins may be accessing from datacenter IPs (VPS, Azure, AWS, etc.)
-  const isAdminPath = pathname.startsWith('/mamacita') || pathname.startsWith('/api/admin')
+  // Also allow CSRF token endpoint (needed for admin panel)
+  const isAdminPath = pathname.startsWith('/mamacita') || 
+                       pathname.startsWith('/api/admin') ||
+                       pathname === '/api/csrf-token'
   if (isAdminPath) {
     // Admin paths bypass all security checks (scanner detection, bot detection, network restrictions)
     // This allows admins to access from any IP without being blocked
