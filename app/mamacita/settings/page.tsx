@@ -18,6 +18,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [csrfToken, setCsrfToken] = useState('')
+  const [csrfLoading, setCsrfLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [stats, setStats] = useState<any>(null)
@@ -29,36 +30,60 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchSettings()
     // Get CSRF token with retry logic
-    const fetchCSRFToken = async (retries = 3) => {
+    const fetchCSRFToken = async (retries = 5) => {
       for (let i = 0; i < retries; i++) {
         try {
           const response = await fetch('/api/csrf-token', {
+            method: 'GET',
             credentials: 'include', // Important: include cookies
-            cache: 'no-store'
+            cache: 'no-store',
+            headers: {
+              'Accept': 'application/json',
+            }
           })
+          
           if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`)
+            const errorData = await response.json().catch(() => ({}))
+            throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`)
           }
+          
           const data = await response.json()
-          if (data.token) {
+          
+          if (data.token && typeof data.token === 'string') {
+            console.log('[CSRF] Token loaded successfully')
             setCsrfToken(data.token)
+            setCsrfLoading(false)
             return
+          } else {
+            throw new Error('Invalid token in response: ' + JSON.stringify(data))
           }
-        } catch (err) {
-          console.error(`CSRF token fetch attempt ${i + 1} failed:`, err)
+        } catch (err: any) {
+          console.error(`[CSRF] Fetch attempt ${i + 1}/${retries} failed:`, err.message || err)
+          
           if (i === retries - 1) {
-            toast.error('Failed to load CSRF token. Please refresh the page.', {
-              duration: 5000,
+            // Last attempt failed
+            const errorMsg = err.message || 'Unknown error'
+            console.error('[CSRF] All retry attempts failed. Last error:', errorMsg)
+            setCsrfLoading(false)
+            toast.error(`CSRF token failed to load: ${errorMsg}. Please refresh the page.`, {
+              duration: 8000,
               position: 'top-right'
             })
+            // Still try to set empty token so user can see the error
+            setCsrfToken('')
           } else {
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
+            // Wait before retry (exponential backoff)
+            const delay = 1000 * Math.pow(2, i)
+            console.log(`[CSRF] Retrying in ${delay}ms...`)
+            await new Promise(resolve => setTimeout(resolve, delay))
           }
         }
       }
     }
+    
+    // Start fetching CSRF token
     fetchCSRFToken()
+    
     // Load pattern stats
     setStats(getPatternStats())
   }, [])
@@ -281,13 +306,18 @@ export default function SettingsPage() {
             </button>
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || csrfLoading || !csrfToken}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
           >
             {saved ? (
               <>
                 <CheckCircle className="w-5 h-5" />
                 Saved!
+              </>
+            ) : csrfLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Loading...
               </>
             ) : (
               <>
