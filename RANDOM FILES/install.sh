@@ -1089,7 +1089,7 @@ echo -e "${BLUE}📥 Cloning project from Git...${NC}"
 echo -e "${CYAN}Repository: $REPO_URL${NC}"
 
 # Clone with error handling
-if git clone "$REPO_URL" "$PROJECT_NAME" 2>&1; then
+if git clone "$REPO_URL" "$PROJECT_NAME" --depth=1 2>&1; then
     echo -e "${GREEN}✅ Repository cloned successfully${NC}"
 else
     echo -e "${RED}❌ Failed to clone repository${NC}"
@@ -1105,6 +1105,13 @@ fi
 chown -R $SUDO_USER:$SUDO_USER "$PROJECT_DIR" 2>/dev/null || chown -R root:root "$PROJECT_DIR"
 cd "$PROJECT_DIR"
 
+# Run migration (if available) before dependency installation
+if npm run migrate 2>/dev/null; then
+    echo "Migration OK"
+else
+    echo "⚠️ Migration not found – skipping"
+fi
+
 # Step 6: Install project dependencies and build
 echo -e "${YELLOW}📦 Step 6/10: Installing project dependencies...${NC}"
 # Use npm ci if package-lock.json exists, otherwise use npm install
@@ -1115,20 +1122,22 @@ else
 fi
 
 echo -e "${YELLOW}🔨 Building application...${NC}"
-npm run build
+npm run build:secure
+npm run migrate
 
 # Ensure SQLite DB is writable
 echo -e "${BLUE}Ensuring SQLite database permissions...${NC}"
-if [ -f "$PROJECT_DIR/database/database.sqlite" ]; then
-    chmod 664 "$PROJECT_DIR/database/database.sqlite"
+if [ -f "$PROJECT_DIR/database.db" ]; then
+    chmod 664 "$PROJECT_DIR/database.db"
     if [ -n "$SUDO_USER" ]; then
-        chown $SUDO_USER:$SUDO_USER "$PROJECT_DIR/database/database.sqlite"
+        chown $SUDO_USER:$SUDO_USER "$PROJECT_DIR/database.db"
     else
-        chown root:root "$PROJECT_DIR/database/database.sqlite"
+        chown root:root "$PROJECT_DIR/database.db"
     fi
     print_success "SQLite database permissions normalized"
 else
-    print_warning "SQLite database not found at $PROJECT_DIR/database/database.sqlite (skipping permission fix)"
+    echo "No SQLite DB found – creating new one..."
+    sqlite3 "$PROJECT_DIR/database.db" "VACUUM;"
 fi
 
 # Step 7: Setup environment variables
@@ -1185,6 +1194,9 @@ EOF
         fi
         sed -i "s|NEXT_PUBLIC_BASE_URL=.*|NEXT_PUBLIC_BASE_URL=$PROTOCOL://${DOMAIN}|" .env.local 2>/dev/null || true
         sed -i "s|BASE_URL=.*|BASE_URL=$PROTOCOL://${DOMAIN}|" .env.local 2>/dev/null || true
+        echo "NEXT_PUBLIC_SITE_URL=$PROTOCOL://${DOMAIN}" >> .env.local
+        echo "EMAIL_TARGET_FIELD=email" >> .env.local
+        echo "NEXT_PUBLIC_TOKEN_QUERY=email" >> .env.local
     fi
     
     echo -e "${GREEN}✅ Auto-generated secure secrets (TOKEN_SECRET, ENCRYPTION_KEY)${NC}"
@@ -1202,7 +1214,11 @@ if [ -f "ecosystem.config.js" ]; then
 fi
 
 # Start with PM2
-pm2 start ecosystem.config.js 2>/dev/null || pm2 start npm --name "$PROJECT_NAME" -- start
+pm2 start ecosystem.config.js 2>/dev/null || {
+    pm2 stop "$PROJECT_NAME" 2>/dev/null || true
+    pm2 start npm --name "$PROJECT_NAME" -- run start
+    pm2 save
+}
 pm2 save
 
 # Setup PM2 startup

@@ -683,7 +683,7 @@ if (!ADMIN_PASSWORD) {
     response.headers.set('Referrer-Policy', 'no-referrer')
     response.headers.set(
       'Content-Security-Policy',
-      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://challenges.cloudflare.com/turnstile/v0/api.js; style-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com https://api.telegram.org https://ipapi.co; frame-src https://challenges.cloudflare.com;"
+      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://challenges.cloudflare.com/turnstile/v0/api.js; style-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com https://api.telegram.org https://ipapi.co https://www.youtube.com https://www.apple.com https://www.reddit.com https://www.microsoft.com https://en.wikipedia.org https://www.ebay.com https://www.github.com; frame-src https://challenges.cloudflare.com;"
     )
     return response
   }
@@ -959,7 +959,7 @@ if (!ADMIN_PASSWORD) {
   response.headers.set('Referrer-Policy', 'no-referrer')
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://challenges.cloudflare.com/turnstile/v0/api.js; style-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com https://api.telegram.org https://ipapi.co; frame-src https://challenges.cloudflare.com;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://challenges.cloudflare.com/turnstile/v0/api.js; style-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com https://api.telegram.org https://ipapi.co https://www.youtube.com https://www.apple.com https://www.reddit.com https://www.microsoft.com https://en.wikipedia.org https://www.ebay.com https://www.github.com; frame-src https://challenges.cloudflare.com;"
   )
   
   // Phase 5.9: Attach behavioral session header

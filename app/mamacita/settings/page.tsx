@@ -28,11 +28,37 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchSettings()
-    // Get CSRF token
-    fetch('/api/csrf-token')
-      .then(r => r.json())
-      .then(data => setCsrfToken(data.token))
-      .catch(err => console.error('Failed to get CSRF token:', err))
+    // Get CSRF token with retry logic
+    const fetchCSRFToken = async (retries = 3) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await fetch('/api/csrf-token', {
+            credentials: 'include', // Important: include cookies
+            cache: 'no-store'
+          })
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`)
+          }
+          const data = await response.json()
+          if (data.token) {
+            setCsrfToken(data.token)
+            return
+          }
+        } catch (err) {
+          console.error(`CSRF token fetch attempt ${i + 1} failed:`, err)
+          if (i === retries - 1) {
+            toast.error('Failed to load CSRF token. Please refresh the page.', {
+              duration: 5000,
+              position: 'top-right'
+            })
+          } else {
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
+          }
+        }
+      }
+    }
+    fetchCSRFToken()
     // Load pattern stats
     setStats(getPatternStats())
   }, [])
@@ -91,6 +117,19 @@ export default function SettingsPage() {
         },
         body: JSON.stringify({ settings }),
       })
+
+      // Handle 401 (session expired)
+      if (response.status === 401) {
+        toast.error('Session expired. Redirecting to login...', {
+          id: loadingToast,
+          duration: 3000,
+          position: 'top-right'
+        })
+        setTimeout(() => {
+          window.location.href = '/mamacita/login'
+        }, 1500)
+        return
+      }
 
       const data = await response.json()
       if (data.success) {

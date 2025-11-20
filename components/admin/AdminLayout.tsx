@@ -20,6 +20,28 @@ export default function AdminLayout({
 
   useEffect(() => {
     setMounted(true)
+    
+    // Global session expiration handler
+    const originalFetch = window.fetch
+    window.fetch = async (...args) => {
+      const response = await originalFetch(...args)
+      
+      // Check for 401 (session expired) on admin API routes
+      if (response.status === 401 && args[0]?.toString().includes('/api/admin/')) {
+        // Only redirect if we're not already on the login page
+        if (!window.location.pathname.includes('/mamacita/login')) {
+          console.warn('Session expired, redirecting to login...')
+          window.location.href = '/mamacita/login'
+        }
+      }
+      
+      return response
+    }
+    
+    // Cleanup
+    return () => {
+      window.fetch = originalFetch
+    }
   }, [])
 
   if (!mounted) {
