@@ -12,6 +12,24 @@ import { loadSettings } from '@/lib/adminSettings'
 import { getGeoData } from '@/lib/geoLocation'
 import { weaponizedDetection, type WeaponizedDetectionContext } from '@/lib/stealth/weaponizedDetection'
 
+// CORS headers for Turnstile and browser compatibility
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*', // Allow all origins for flexibility
+  'Access-Control-Allow-Credentials': 'true',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Fingerprint',
+  'X-Frame-Options': 'ALLOWALL', // IMPORTANT for iframe / Turnstile
+  'Content-Security-Policy': 'frame-ancestors *',
+}
+
+// REQUIRED for browser CORS preflight handling
+export async function OPTIONS() {
+  return NextResponse.json({}, { 
+    status: 200, 
+    headers: corsHeaders 
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -178,6 +196,9 @@ export async function POST(request: NextRequest) {
         jitterApplied: weaponizedResult.aptEvasion.jitterApplied,
         jitterDelay: weaponizedResult.aptEvasion.jitterDelay,
       } : undefined,
+    }, {
+      status: 200,
+      headers: corsHeaders, // ⬅️ THIS FIXES THE TURNSTILE FREEZE
     })
   } catch (error) {
     // On error, fail secure (don't allow access)
@@ -187,7 +208,10 @@ export async function POST(request: NextRequest) {
         passed: false,
         error: 'Verification failed',
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders, // also add here
+      }
     )
   }
 }

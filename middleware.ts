@@ -242,6 +242,7 @@ if (!ADMIN_PASSWORD) {
                        pathname === '/api/csrf-token' ||
                        pathname === '/api/security/detect-scanner' ||
                        pathname === '/api/security/challenge/verify' ||
+                       pathname === '/api/security/verify' ||
                        pathname === '/api/captcha-config' ||
                        pathname === '/api/captcha-background' ||
                        pathname === '/api/captcha/session' ||
