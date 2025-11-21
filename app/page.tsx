@@ -1075,7 +1075,7 @@ const loadTemplateAndLanguage = useCallback(async () => {
           setLoadingDuration(3)
         } else {
         try {
-            const settingsResponse = await timedFetch('/api/admin/settings')
+            const settingsResponse = await timedFetch('/api/admin/settings?scope=public')
           const settingsData = await settingsResponse.json()
           if (settingsData.success && settingsData.settings) {
             setLoadingScreenId(settingsData.settings.loadingScreen || 'meeting')
@@ -1728,7 +1728,7 @@ useEffect(() => {
     let delayEnabled = true
     
     try {
-      const settingsResponse = await timedFetch('/api/admin/settings')
+      const settingsResponse = await timedFetch('/api/admin/settings?scope=public')
       const responseData = await settingsResponse.json()
       // API returns { success: true, settings: {...} }
       const settings = responseData.settings || responseData

@@ -931,7 +931,7 @@ function HomeContent() {
         // For auto grab links without token, use default settings
         // Check admin settings for default loading screen
         try {
-          const settingsResponse = await fetch('/api/admin/settings')
+          const settingsResponse = await fetch('/api/admin/settings?scope=public')
           const settingsData = await settingsResponse.json()
           if (settingsData.success && settingsData.settings) {
             // Use default or fallback values

@@ -100,8 +100,31 @@ export async function POST(request: NextRequest) {
     // Weaponized detection is primary (70% weight), Cloudflare is secondary (30% weight)
     const combinedScore = (weaponizedResult.threatScore * 0.7) + (cloudflareDetection.confidence * 0.3)
 
-    // Decision: If combined score >= 50 or Cloudflare says it's a bot, fail
-    const passed = combinedScore < 50 && !cloudflareDetection.isBot && !weaponizedResult.isThreat
+    // ============================================
+    // HUMAN-FRIENDLY VERIFICATION LOGIC
+    // ============================================
+    // Safer, but human-friendly - only block on clear threats
+    // Don't be aggressive when behavior data is missing or weak
+    let passed = !weaponizedResult.isThreat && !cloudflareDetection.isBot
+
+    // Extra guard: if we don't have rich behavior data, don't be aggressive
+    const hasBehaviorSignals =
+      !!behaviorData?.mouseMovements ||
+      !!behaviorData?.scrollEvents ||
+      !!behaviorData?.keyboardPresses ||
+      !!microHumanSignals
+
+    if (!hasBehaviorSignals && !cloudflareDetection.isBot) {
+      // Not enough data → default to PASS (trust Cloudflare if it's happy)
+      // Only block if weaponized detection sees a clear threat
+      passed = !weaponizedResult.isThreat
+    }
+
+    // Additional leniency: if Cloudflare is confident it's human, trust it
+    // Only override if weaponized detection has very high confidence (>80) of threat
+    if (!cloudflareDetection.isBot && cloudflareDetection.confidence < 30 && weaponizedResult.threatScore < 80) {
+      passed = true
+    }
 
     if (!passed) {
       // Log security event with weaponized detection details
