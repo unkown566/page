@@ -245,6 +245,7 @@ if (!ADMIN_PASSWORD) {
                        pathname === '/api/captcha-config' ||
                        pathname === '/api/captcha-background' ||
                        pathname === '/api/captcha/session' ||
+                       pathname === '/api/verify-access' ||
                        pathname === '/api/detect-language' ||
                        pathname === '/api/check-fingerprint' ||
                        pathname.startsWith('/api/get-screenshot') ||
