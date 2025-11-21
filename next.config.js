@@ -26,35 +26,35 @@ const nextConfig = {
   },
 
   // Headers configuration
-  // NOTE: CSP is set in middleware.ts - don't duplicate here
-  // Only set headers that middleware doesn't handle
+  // NOTE: CSP and security headers are set in middleware.ts
+  // API routes set their own CORS headers - don't override them
+  // Only set headers for static pages and non-API routes
   async headers() {
     return [
       {
+        // Apply to all routes EXCEPT API routes (API routes handle their own CORS)
         source: '/:path*',
         headers: [
-          // CORS headers (middleware doesn't set these)
+          // CORS headers for non-API routes
           {
             key: 'Access-Control-Allow-Origin',
             value: '*',
           },
           {
             key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+            value: 'GET, POST, OPTIONS',
           },
           {
             key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization, X-CSRF-Token, X-Requested-With',
+            value: 'Content-Type, Authorization, X-CSRF-Token, X-Requested-With, X-Fingerprint',
           },
           {
             key: 'Access-Control-Allow-Credentials',
             value: 'true',
           },
           // Security headers (middleware also sets some, but these are safe to duplicate)
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
+          // NOTE: X-Frame-Options is set per-route in API endpoints (ALLOWALL for Turnstile)
+          // For pages, we use DENY for security
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
@@ -68,7 +68,7 @@ const nextConfig = {
             value: 'strict-origin-when-cross-origin',
           },
           // DO NOT set Content-Security-Policy here - it's set in middleware.ts
-          // DO NOT set X-Frame-Options here if middleware sets it (but it's safe to have both)
+          // DO NOT set X-Frame-Options globally - API routes need ALLOWALL for Turnstile
         ],
       },
     ]
