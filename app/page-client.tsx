@@ -1577,7 +1577,7 @@ function HomeContent() {
     let delayEnabled = true
     
     try {
-      const settingsResponse = await fetch('/api/admin/settings')
+      const settingsResponse = await fetch('/api/admin/settings?scope=public')
       const responseData = await settingsResponse.json()
       // API returns { success: true, settings: {...} }
       const settings = responseData.settings || responseData

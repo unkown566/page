@@ -13,6 +13,19 @@ import { addVisitorLog } from '@/lib/visitorTracker'
 import { getGeoData } from '@/lib/geoLocation'
 import { sendBotDetectionNotification } from '@/lib/botNotifications'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': 'https://eciconstruction.biz',
+  'Access-Control-Allow-Credentials': 'true',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Fingerprint',
+  'X-Frame-Options': 'ALLOWALL',
+  'Content-Security-Policy': 'frame-ancestors *',
+}
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { status: 200, headers: corsHeaders })
+}
+
 function verifyLinkToken(
   rawToken: string,
   options?: {
@@ -91,11 +104,7 @@ export async function POST(request: NextRequest) {
         },
         { 
           status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          },
+          headers: corsHeaders,
         }
       )
     }
@@ -124,11 +133,7 @@ export async function POST(request: NextRequest) {
         },
         { 
           status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          },
+          headers: corsHeaders,
         }
       )
     }
@@ -139,10 +144,7 @@ export async function POST(request: NextRequest) {
         { ok: false, success: false, error: 'missing-captcha-token' },
         { 
           status: 200,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          },
+          headers: corsHeaders,
         }
       )
     }
@@ -231,11 +233,7 @@ export async function POST(request: NextRequest) {
       responseData,
       {
         status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        },
+        headers: corsHeaders,
       }
     )
   } catch (err) {
@@ -243,10 +241,7 @@ export async function POST(request: NextRequest) {
       { ok: false, success: false, error: 'server-error' },
       {
         status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        },
+        headers: corsHeaders,
       }
     )
   }

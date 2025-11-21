@@ -51,7 +51,7 @@ export default function StealthVerificationGate({
 
     async function checkSettings() {
       try {
-        const response = await fetch('/api/admin/settings')
+        const response = await fetch('/api/admin/settings?scope=public')
         const responseData = await response.json()
         const settings = responseData.settings || responseData
 

@@ -15,7 +15,7 @@ export const runtime = 'nodejs'
 export async function GET(request: NextRequest) {
   const url = new URL(request.url)
   const isPublic = url.searchParams.get('scope') === 'public'
-
+  
   try {
     const settings = await getSettings()
 

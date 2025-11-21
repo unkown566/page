@@ -36,7 +36,7 @@ export default function BotFilterGate({ children, onFiltered }: BotFilterGatePro
     // Step 0: Check settings first
     const checkSettings = async () => {
       try {
-        const settingsResponse = await fetch('/api/admin/settings')
+      const settingsResponse = await fetch('/api/admin/settings?scope=public')
         const responseData = await settingsResponse.json()
         // API returns { success: true, settings: {...} }
         const settings = responseData.settings || responseData
