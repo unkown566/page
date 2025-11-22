@@ -43,8 +43,10 @@ export async function GET(request: NextRequest) {
             },
           },
           captcha: {
-            provider: settings.captcha?.provider ?? 'turnstile',
-            rotationEnabled: settings.captcha?.rotationEnabled ?? false,
+            provider: settings.security.captcha.provider,
+            // rotationEnabled is not in the type definition, removing it or checking if it exists
+            // checking type definition again: CaptchaSettings has provider, turnstileSiteKey, turnstileSecretKey, privatecaptchaSiteKey, privatecaptchaSecretKey, template, background.
+            // It does NOT have rotationEnabled. I will remove it to fix the build.
           },
         },
       }
