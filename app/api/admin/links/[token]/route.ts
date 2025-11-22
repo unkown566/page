@@ -3,10 +3,10 @@ import { getLink, saveLink } from '@/lib/linkDatabase'
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const token = params.token
+    const { token } = await params
 
     if (!token) {
       return NextResponse.json(
