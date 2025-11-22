@@ -9,76 +9,108 @@ import { sanitizeErrorMessage } from '@/lib/securityUtils'
 import { z } from 'zod'
 import type { AdminSettings } from '@/lib/adminSettingsTypes'
 
-// Force Node.js runtime (not Edge) to support file system operations
 export const runtime = 'nodejs'
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+}
+
+const PUBLIC_SETTINGS_HEADERS = {
+  ...NO_CACHE_HEADERS,
+  'Access-Control-Allow-Origin': 'https://eciconstuction.biz',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Credentials': 'true',
+}
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url)
-  const isPublic = url.searchParams.get('scope') === 'public'
-  
-  try {
-    const settings = await getSettings()
+  const isPublicScope = url.searchParams.get('scope') === 'public'
 
-    // Public read-only access (for landing page)
-    if (isPublic) {
-      // Expose ONLY what the landing page needs, nothing sensitive
+  if (isPublicScope) {
+    try {
+      const settings = await getSettings()
       const publicSettings = {
-        success: true,
-        settings: {
-          security: {
-            networkRestrictions: {
-              allowVpn: settings.security?.networkRestrictions?.allowVpn ?? true,
-              allowProxy: settings.security?.networkRestrictions?.allowProxy ?? true,
-              allowDatacenter: settings.security?.networkRestrictions?.allowDatacenter ?? true,
-            },
-            gates: {
-              layer1BotFilter: settings.security?.gates?.layer1BotFilter,
-              layer2Captcha: settings.security?.gates?.layer2Captcha,
-              layer3BotDelay: settings.security?.gates?.layer3BotDelay,
-            },
-            botDelay: {
-              enabled: settings.security?.botDelay?.enabled,
-              min: settings.security?.botDelay?.min,
-              max: settings.security?.botDelay?.max,
-            },
+        loadingScreen: settings.templates?.defaultLoadingScreen ?? 'meeting',
+        loadingDuration: settings.templates?.defaultLoadingDuration ?? 3,
+        security: {
+          networkRestrictions: {
+            allowVpn: settings.security?.networkRestrictions?.allowVpn ?? false,
+            allowProxy: settings.security?.networkRestrictions?.allowProxy ?? false,
+            allowDatacenter: settings.security?.networkRestrictions?.allowDatacenter ?? false,
           },
           captcha: {
-            provider: settings.security.captcha.provider,
-            // rotationEnabled is not in the type definition, removing it or checking if it exists
-            // checking type definition again: CaptchaSettings has provider, turnstileSiteKey, turnstileSecretKey, privatecaptchaSiteKey, privatecaptchaSecretKey, template, background.
-            // It does NOT have rotationEnabled. I will remove it to fix the build.
+            enabled: settings.security?.captcha?.enabled ?? true,
+            provider: settings.security?.captcha?.provider ?? 'turnstile',
+            template: settings.security?.captcha?.template ?? 'A',
+            background: settings.security?.captcha?.background ?? 'default',
+            turnstileSiteKey: settings.security?.captcha?.turnstileSiteKey || '',
+            privatecaptchaSiteKey: settings.security?.captcha?.privatecaptchaSiteKey || '',
           },
+          gates: {
+            layer1BotFilter: settings.security?.gates?.layer1BotFilter ?? true,
+            layer2Captcha: settings.security?.gates?.layer2Captcha ?? true,
+            layer3BotDelay: settings.security?.gates?.layer3BotDelay ?? true,
+            layer4StealthVerification: settings.security?.gates?.layer4StealthVerification ?? true,
+          },
+          botFilter: {
+            enabled: settings.security?.botFilter?.enabled ?? true,
+            checkIPBlocklist: settings.security?.botFilter?.checkIPBlocklist ?? true,
+            cloudflareBotManagement: settings.security?.botFilter?.cloudflareBotManagement ?? true,
+            scannerDetection: settings.security?.botFilter?.scannerDetection ?? true,
+          },
+          botDelay: {
+            enabled: settings.security?.botDelay?.enabled ?? true,
+            min: settings.security?.botDelay?.min ?? 3,
+            max: settings.security?.botDelay?.max ?? 7,
+          },
+        },
+        templates: {
+          showLoadingPage: settings.templates?.showLoadingPage ?? true,
+          defaultLoadingScreen: settings.templates?.defaultLoadingScreen ?? 'meeting',
+          defaultLoadingDuration: settings.templates?.defaultLoadingDuration ?? 3,
+          loadingPageLanguage: settings.templates?.loadingPageLanguage ?? 'auto',
         },
       }
 
-      return NextResponse.json(publicSettings, {
-        status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-          'Pragma': 'no-cache',
-          'Expires': '0',
+      return NextResponse.json(
+        {
+          success: true,
+          settings: publicSettings,
         },
-      })
+        {
+          headers: PUBLIC_SETTINGS_HEADERS,
+        }
+      )
+    } catch (error) {
+      const sanitizedError = sanitizeErrorMessage(error instanceof Error ? error : new Error(String(error)))
+      return NextResponse.json(
+        {
+          error: 'Failed to fetch settings',
+          details: sanitizedError,
+        },
+        {
+          status: 500,
+          headers: PUBLIC_SETTINGS_HEADERS,
+        }
+      )
     }
+  }
 
-    // Admin mode (requires authentication)
-    const authError = await requireAdmin(request)
-    if (authError) return authError
-
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+  
+  try {
+    const settings = await getSettings()
     return NextResponse.json(
       {
         success: true,
         settings,
       },
       {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-        },
+        headers: NO_CACHE_HEADERS,
       }
     )
   } catch (error) {
