@@ -160,11 +160,16 @@ export default function BotFilterGate({ children, onFiltered }: BotFilterGatePro
   // Inject honeypot CSS
   useEffect(() => {
     if (isDevFastMode) return
+    if (typeof window === 'undefined') return
+    
     const style = document.createElement('style')
     style.textContent = generateHoneypotCSS()
     document.head.appendChild(style)
     return () => {
-      document.head.removeChild(style)
+      // FIX: Check if style is still in DOM before removing
+      if (style.parentNode === document.head) {
+        document.head.removeChild(style)
+      }
     }
   }, [isDevFastMode])
 
@@ -228,9 +233,9 @@ function HoneypotInjector() {
     document.body.appendChild(container)
     
     return () => {
-      // Cleanup on unmount
-      if (container.parentNode) {
-        container.parentNode.removeChild(container)
+      // FIX: Check if container is still in DOM before removing
+      if (container.parentNode === document.body) {
+        document.body.removeChild(container)
       }
     }
   }, [])

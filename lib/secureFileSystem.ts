@@ -118,10 +118,17 @@ export async function secureUpdateJSON<T>(
     let data: T
     try {
       const fileData = await fs.readFile(filePath, 'utf-8')
-      const parsed = JSON.parse(fileData)
-      data = parsed as T
+      // Handle empty or whitespace-only files
+      const trimmed = fileData.trim()
+      if (!trimmed) {
+        data = defaultValue
+      } else {
+        const parsed = JSON.parse(trimmed)
+        data = parsed as T
+      }
     } catch (error: any) {
-      if (error.code === 'ENOENT') {
+      // File doesn't exist OR JSON parse error (empty/corrupted file) -> use default
+      if (error.code === 'ENOENT' || error instanceof SyntaxError) {
         data = defaultValue
       } else {
         throw error

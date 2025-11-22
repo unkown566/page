@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { addVisitorLog } from '@/lib/visitorTracker'
 import { getGeoData } from '@/lib/geoLocation'
 
+export const runtime = 'nodejs' // Required for file system operations
+
 export async function POST(request: NextRequest) {
   try {
     // Only allow internal requests (from middleware)
@@ -53,8 +55,14 @@ export async function POST(request: NextRequest) {
     
   } catch (error: any) {
     // Don't fail the middleware request if logging fails
+    // Log error for debugging but return gracefully
+    console.error('[LOG-VISITOR] Error logging visitor:', error)
     return NextResponse.json(
-      { error: 'Logging failed', details: error.message },
+      { 
+        error: 'Logging failed', 
+        details: error?.message || String(error),
+        stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     )
   }

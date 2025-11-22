@@ -19,11 +19,8 @@ const nextConfig = {
     unoptimized: false,
   },
 
-  // Experimental features for Node.js compatibility
-  experimental: {
-    // Allow Node.js packages to work in production
-    serverComponentsExternalPackages: ['better-sqlite3', 'fs', 'crypto', 'path'],
-  },
+  // Node.js packages that should be externalized (Next.js 16+ format)
+  serverExternalPackages: ['better-sqlite3', 'fs', 'crypto', 'path'],
 
   // Headers configuration
   // NOTE: CSP and security headers are set in middleware.ts
@@ -83,6 +80,10 @@ const nextConfig = {
     }
     return config
   },
+
+  // Turbopack configuration (Next.js 16+ uses Turbopack by default)
+  // Empty config to silence the error - we're using webpack for now
+  turbopack: {},
 
   // Output configuration
   output: 'standalone', // For better VPS deployment with PM2

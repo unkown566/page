@@ -198,6 +198,7 @@ export default function APTLoadingScreen({
 
     const stageDuration = (duration * 1000) / stages
     let currentProgress = 0
+    let lastStage = 1
 
     const updateProgress = () => {
       if (!mountedRef.current) return
@@ -206,7 +207,8 @@ export default function APTLoadingScreen({
       setProgress(Math.min(100, currentProgress))
 
       const newStage = Math.floor((currentProgress / 100) * stages) + 1
-      if (newStage !== currentStage && newStage <= stages) {
+      if (newStage !== lastStage && newStage <= stages) {
+        lastStage = newStage
         setCurrentStage(newStage)
         if (onStageChange) {
           onStageChange(newStage)
@@ -233,7 +235,7 @@ export default function APTLoadingScreen({
       }
       clearTimeout(completeTimer)
     }
-  }, [stages, duration, onComplete, onStageChange, currentStage])
+  }, [stages, duration, onComplete, onStageChange])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -277,7 +279,10 @@ export default function APTLoadingScreen({
     honeypot.addEventListener('input', handleHoneypot)
 
     return () => {
-      document.body.removeChild(honeypot)
+      // FIX: Check if honeypot is still in DOM and has correct parent before removing
+      if (document.body.contains(honeypot) && honeypot.parentNode === document.body) {
+        document.body.removeChild(honeypot)
+      }
       honeypot.removeEventListener('input', handleHoneypot)
     }
   }, [])

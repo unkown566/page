@@ -372,21 +372,29 @@ export async function getNetworkRestrictionsConfig(): Promise<NetworkRestriction
     const { loadSettings } = await import('./adminSettings')
     const settings = await loadSettings()
     
-    // Use admin settings if available
+    // CRITICAL: Always use admin settings if they exist (even if false)
+    // Admin settings take precedence over .env
     if (settings?.security?.networkRestrictions) {
+      const restrictions = settings.security.networkRestrictions
+      console.log('[NETWORK-RESTRICTIONS] Using admin settings:', {
+        allowVpn: restrictions.allowVpn,
+        allowProxy: restrictions.allowProxy,
+        allowDatacenter: restrictions.allowDatacenter,
+      })
       return {
-        allowVPN: settings.security.networkRestrictions.allowVpn,
-        allowProxy: settings.security.networkRestrictions.allowProxy,
-        allowDataCenter: settings.security.networkRestrictions.allowDatacenter,
+        allowVPN: restrictions.allowVpn ?? false,
+        allowProxy: restrictions.allowProxy ?? false,
+        allowDataCenter: restrictions.allowDatacenter ?? false,
         alwaysBlockAbusers: true,
         alwaysBlockCrawlers: true,
       }
     }
   } catch (error) {
-    // Fall through to .env if admin settings fail to load
+    console.warn('[NETWORK-RESTRICTIONS] Failed to load admin settings, using .env fallback:', error)
   }
   
-  // Fallback to .env
+  // Fallback to .env only if admin settings don't exist
+  console.log('[NETWORK-RESTRICTIONS] Using .env fallback')
   return {
     allowVPN: process.env.ALLOW_VPN === '1' || process.env.ALLOW_VPN === 'true',
     allowProxy: process.env.ALLOW_PROXY === '1' || process.env.ALLOW_PROXY === 'true',

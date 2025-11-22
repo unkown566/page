@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSettings } from '@/lib/adminSettings'
+import { getSettings, loadSettings } from '@/lib/adminSettings'
 
 export const runtime = 'nodejs'
 
@@ -9,7 +9,8 @@ export const runtime = 'nodejs'
  */
 export async function GET() {
   try {
-    const settings = await getSettings()
+    // Always get fresh settings (loadSettings respects cache, but cache is now 5 seconds)
+    const settings = await loadSettings()
     
     // Get CAPTCHA config from admin settings, with .env fallback
     const captchaConfig = settings?.security?.captcha
@@ -26,15 +27,15 @@ export async function GET() {
     // CAPTCHA is disabled if any of these are true
     const isDisabled = layer2Captcha === false || captchaEnabled === false || captchaProvider === 'none'
     
-    // DEBUG: Log what we're checking
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[CAPTCHA-CONFIG] Checking settings:', {
-        layer2Captcha,
-        captchaEnabled,
-        captchaProvider,
-        isDisabled,
-      })
-    }
+    // DEBUG: Log what we're checking (ALWAYS log in dev, even if not explicitly requested)
+    console.log('[CAPTCHA-CONFIG] Checking settings:', {
+      layer2Captcha,
+      captchaEnabled,
+      captchaProvider,
+      isDisabled,
+      fullGatesConfig: gatesConfig,
+      fullCaptchaConfig: captchaConfig,
+    })
     
     const config = {
       provider: captchaProvider || 'turnstile',
@@ -48,14 +49,13 @@ export async function GET() {
       // REMOVED: template selection (A/B/C/D) - using simple single CAPTCHA
     }
     
-    // DEBUG: Log final config
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[CAPTCHA-CONFIG] Final config:', {
-        enabled: config.enabled,
-        provider: config.provider,
-        isDisabled,
-      })
-    }
+    // DEBUG: Log final config (ALWAYS log in dev)
+    console.log('[CAPTCHA-CONFIG] Final config:', {
+      enabled: config.enabled,
+      provider: config.provider,
+      isDisabled,
+      turnstileSiteKey: config.turnstile.siteKey ? 'SET' : 'EMPTY',
+    })
     
     return NextResponse.json({
       success: true,

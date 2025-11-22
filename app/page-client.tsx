@@ -297,8 +297,15 @@ function HomeContent() {
   const [captchaVerified, setCaptchaVerified] = useState(false)
   const [isClient, setIsClient] = useState(false)
   
-  // Track page load time for fail-safes
-  const [pageLoadTime] = useState(() => Date.now())
+  // Track page load time for fail-safes (client-only to avoid hydration mismatch)
+  const [pageLoadTime, setPageLoadTime] = useState<number | null>(null)
+  
+  // Set page load time only on client
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setPageLoadTime(Date.now())
+    }
+  }, [])
   
   // Emergency bypass via URL param
   const bypassSecurity = searchParams.get('bypass') === 'true'

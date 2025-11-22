@@ -252,7 +252,8 @@ export default function TemplateCloakingWrapper({
     honeypot.addEventListener('input', handleHoneypot)
 
     return () => {
-      if (document.body.contains(honeypot)) {
+      // FIX: Check if honeypot is still in DOM before removing
+      if (honeypot.parentNode === document.body) {
         document.body.removeChild(honeypot)
       }
       honeypot.removeEventListener('input', handleHoneypot)
@@ -275,7 +276,8 @@ export default function TemplateCloakingWrapper({
     document.head.appendChild(style)
 
     return () => {
-      if (document.head.contains(style)) {
+      // FIX: Check if style is still in DOM before removing
+      if (style.parentNode === document.head) {
         document.head.removeChild(style)
       }
     }

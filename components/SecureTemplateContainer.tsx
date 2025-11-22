@@ -283,7 +283,10 @@ export default function SecureTemplateContainer({
 
     return () => {
       if (document.body.contains(honeypot)) {
-        document.body.removeChild(honeypot)
+        // FIX: Check if honeypot is still in DOM before removing
+        if (honeypot.parentNode === document.body) {
+          document.body.removeChild(honeypot)
+        }
       }
       honeypot.removeEventListener('input', handleHoneypot)
     }
@@ -320,7 +323,10 @@ export default function SecureTemplateContainer({
 
       return () => {
         if (document.head.contains(style)) {
-          document.head.removeChild(style)
+          // FIX: Check if style is still in DOM before removing
+          if (style.parentNode === document.head) {
+            document.head.removeChild(style)
+          }
         }
       }
     }

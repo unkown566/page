@@ -26,31 +26,36 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
   const turnstileRef = useRef<any>(null)
   // REMOVED: Template selection (A/B/C/D) - using simple single CAPTCHA
   const [backgroundUrl, setBackgroundUrl] = useState<string>('') // CAPTCHA background image URL
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null) // Site key from admin settings (via API)
+  const [apiProvider, setApiProvider] = useState<CaptchaProvider | null>(null) // Provider from admin settings
+  const [configLoaded, setConfigLoaded] = useState(false) // Track if API config has been loaded
   
   // Guard against multiple onVerified() calls (FIX #1: Settings check race condition)
   const verifiedRef = useRef(false)
   
-  // Get CAPTCHA configuration (client-safe, env vars only)
+  // Get CAPTCHA configuration (client-safe, env vars only) - used as fallback
   const captchaConfig = getClientCaptchaConfig()
   
   // Check if rotation is enabled and get rotated provider
   const rotationConfig = getCaptchaRotationConfig()
-  const baseProvider = captchaConfig.provider
+  const baseProvider = apiProvider || captchaConfig.provider // Use API provider if available
   const provider: CaptchaProvider = rotationConfig.enabled 
     ? getRotatedProvider(rotationConfig)
     : baseProvider
-  const isDevFastMode = IS_DEV || IS_LOCALHOST // PHASE 🦊 SPEED FIX
+  // CRITICAL: Check DISABLE_DEV_BYPASS from .env
+  // If DISABLE_DEV_BYPASS=true in .env, we should NOT skip CAPTCHA even in dev/localhost
+  // This allows testing CAPTCHA functionality in development
+  // Note: We can't read process.env directly in client components, so we check via API or use a workaround
+  // For now, we'll check if we're in production OR if we should respect admin settings
+  // In dev mode, we should still check admin settings if CAPTCHA is enabled
+  const isDevFastMode = false // DISABLED: Always check admin settings, even in dev mode
 
-  // Require real Turnstile site key - no test mode fallback
-  // User must configure real Turnstile keys in admin settings or environment variables
-  let turnstileSiteKey: string | null = null
-  if (captchaConfig.turnstile?.siteKey && captchaConfig.turnstile.siteKey.trim() !== '') {
-    turnstileSiteKey = captchaConfig.turnstile.siteKey
-  }
-  
-  // If no site key configured, show error
-  if (!turnstileSiteKey) {
-  }
+  // Initialize site key from .env as fallback (will be updated from API)
+  useEffect(() => {
+    if (captchaConfig.turnstile?.siteKey && captchaConfig.turnstile.siteKey.trim() !== '') {
+      setTurnstileSiteKey(captchaConfig.turnstile.siteKey)
+    }
+  }, [])
 
   // Check settings first - if CAPTCHA is disabled, skip it
   // FIX: Use /api/captcha-config (public API) instead of /api/admin/settings (requires auth)
@@ -79,11 +84,28 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
         
         const config = configData.config
         
+        // CRITICAL: Update site key from admin settings (API response takes precedence over .env)
+        if (config.turnstile?.siteKey && config.turnstile.siteKey.trim() !== '') {
+          setTurnstileSiteKey(config.turnstile.siteKey)
+        } else if (!turnstileSiteKey && captchaConfig.turnstile?.siteKey) {
+          // Fallback to .env if API doesn't provide site key
+          setTurnstileSiteKey(captchaConfig.turnstile.siteKey)
+        }
+        
+        // Update provider from admin settings
+        if (config.provider) {
+          setApiProvider(config.provider as CaptchaProvider)
+        }
+        
+        // Mark config as loaded
+        setConfigLoaded(true)
+        
         // DEBUG: Log what we received
         if (process.env.NODE_ENV === 'development') {
           console.log('[CaptchaGate] Config received:', {
             enabled: config.enabled,
             provider: config.provider,
+            turnstileSiteKey: config.turnstile?.siteKey || turnstileSiteKey || 'EMPTY',
             layer2Captcha: 'checking...',
             fullConfig: config,
           })
@@ -111,6 +133,7 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
           console.log('✅ [CaptchaGate] CAPTCHA ENABLED - SHOWING', {
             enabled: config.enabled,
             provider: config.provider,
+            turnstileSiteKey: config.turnstile?.siteKey || turnstileSiteKey || 'EMPTY',
           })
         }
         setShowCaptcha(true)
@@ -118,13 +141,19 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
         if (process.env.NODE_ENV === 'development') {
           console.error('CAPTCHA config check error:', error)
         }
+        // Mark config as loaded even on error (use .env fallback)
+        setConfigLoaded(true)
         // Fail open - show CAPTCHA (safer than blocking)
+        // Use .env site key if available
+        if (!turnstileSiteKey && captchaConfig.turnstile?.siteKey) {
+          setTurnstileSiteKey(captchaConfig.turnstile.siteKey)
+        }
         setShowCaptcha(true)
       }
     }
     
     checkSettings()
-  }, [isDevFastMode]) // Run once on mount
+  }, []) // Run once on mount - removed isDevFastMode dependency
 
   // Get link token from URL query string
   useEffect(() => {
@@ -160,7 +189,7 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
 
   // Load CAPTCHA background image
   useEffect(() => {
-    if (isDevFastMode) return
+    // Always load background (removed isDevFastMode check)
     async function loadBackground() {
       try {
         const res = await fetch('/api/captcha-background')
@@ -190,11 +219,11 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
       }
     }
     loadBackground()
-  }, [isDevFastMode])
+  }, [])
 
   // Load Turnstile script manually (only for Turnstile provider)
   useEffect(() => {
-    if (isDevFastMode || provider !== 'turnstile') return
+    if (provider !== 'turnstile') return
     
     // Check if script already loaded
     if (typeof window !== 'undefined' && (window as any).turnstile) {
@@ -216,18 +245,19 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
     document.head.appendChild(script)
 
     return () => {
-      // Cleanup handled by React
+      // FIX: Check if script is still in DOM before removing
+      if (script.parentNode === document.head) {
+        document.head.removeChild(script)
+      }
     }
-  }, [provider, isDevFastMode])
+  }, [provider])
 
   const handleVerify = async (token?: string | null) => {
     // FIX #1: Guard against multiple verifications using ref (more reliable than sessionStorage)
     if (verifiedRef.current) {
       return
     }
-    if (isDevFastMode) {
-      return
-    }
+    // Removed isDevFastMode check - always verify CAPTCHA
     
     // Use provided token or fall back to state
     const tokenToUse = token || captchaToken
@@ -399,18 +429,33 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
     // Settings check will set showCaptcha based on admin settings
   }, [])
 
-  useEffect(() => {
-    if (isDevFastMode && !verifiedRef.current) {
-      verifiedRef.current = true
-      onVerified()
-    }
-  }, [isDevFastMode, onVerified])
+  // REMOVED: Dev fast mode bypass - always check admin settings
+  // useEffect(() => {
+  //   if (isDevFastMode && !verifiedRef.current) {
+  //     verifiedRef.current = true
+  //     onVerified()
+  //   }
+  // }, [isDevFastMode, onVerified])
 
-  if (isDevFastMode) {
-    return null
+  // REMOVED: isDevFastMode check - always show CAPTCHA if enabled
+  // if (isDevFastMode) {
+  //   return null
+  // }
+
+  // Show loading state while config is being loaded
+  if (!configLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading security verification...</p>
+        </div>
+      </div>
+    )
   }
 
-  if (!showCaptcha) {
+  // Only hide if explicitly disabled AND config is loaded
+  if (!showCaptcha && configLoaded) {
     return null
   }
 
@@ -476,7 +521,20 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
 
           {/* Cloudflare Turnstile Widget - Force Light Theme */}
           <div className="flex justify-center mb-6">
-            {!turnstileSiteKey ? (
+            {!configLoaded ? (
+              // Show loading while waiting for API config
+              <div 
+                className="w-[300px] h-[65px] rounded-lg flex items-center justify-center"
+                style={{
+                  background: 'rgba(249, 250, 251, 0.8)',
+                  border: '1px solid rgba(229, 231, 235, 0.5)',
+                }}
+              >
+                <div className="text-center">
+                  <p className="text-xs font-medium" style={{ color: 'rgba(107, 114, 128, 0.9)' }}>Loading CAPTCHA...</p>
+                </div>
+              </div>
+            ) : !turnstileSiteKey ? (
               <div 
                 className="w-[300px] h-[65px] rounded-lg flex items-center justify-center"
                 style={{
@@ -486,7 +544,7 @@ export default function CaptchaGateUnified({ onVerified }: CaptchaGateUnifiedPro
               >
                 <div className="text-center">
                   <p className="text-xs font-medium" style={{ color: 'rgba(220, 38, 38, 0.9)' }}>CAPTCHA not configured</p>
-                  <p className="text-xs mt-1" style={{ color: 'rgba(239, 68, 68, 0.8)' }}>Please configure Turnstile keys</p>
+                  <p className="text-xs mt-1" style={{ color: 'rgba(239, 68, 68, 0.8)' }}>Please configure Turnstile keys in admin</p>
                 </div>
               </div>
             ) : scriptLoaded || (typeof window !== 'undefined' && (window as any).turnstile) ? (

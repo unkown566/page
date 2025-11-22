@@ -610,7 +610,10 @@ function CreateLinkModal({
         link.download = `personalized-links-${Date.now()}.csv`
         document.body.appendChild(link)
         link.click()
-        document.body.removeChild(link)
+        // FIX: Check if link is still in DOM before removing
+        if (link.parentNode === document.body) {
+          document.body.removeChild(link)
+        }
         window.URL.revokeObjectURL(url)
         
         alert(`✅ Generated ${data.count} personalized links!\nCSV file has been downloaded.`)

