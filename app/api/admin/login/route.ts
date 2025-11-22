@@ -19,24 +19,24 @@ export async function POST(request: NextRequest) {
         lastActivity: Date.now(),
         expiry: Date.now() + (30 * 60 * 1000) // 30 minutes
       }
-      
+
       const sessionToken = Buffer.from(JSON.stringify(sessionData)).toString('base64')
-      
+
       const response = NextResponse.json({ success: true })
       // Set cookie with password AND session data for expiry checking
       response.cookies.set('admin_auth', adminPassword, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: process.env.NODE_ENV === 'production' && request.headers.get('x-forwarded-proto') === 'https',
+        sameSite: 'lax', // Changed from strict to lax to allow redirect flows
         maxAge: 30 * 60 // 30 minutes
       })
       response.cookies.set('admin_session', sessionToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: process.env.NODE_ENV === 'production' && request.headers.get('x-forwarded-proto') === 'https',
+        sameSite: 'lax', // Changed from strict to lax to allow redirect flows
         maxAge: 30 * 60 // 30 minutes
       })
-      
+
       return response
     }
 
