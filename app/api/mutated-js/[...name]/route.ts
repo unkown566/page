@@ -12,12 +12,13 @@ import { getCachedSettings } from '@/lib/adminSettings'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { name: string[] } }
+  { params }: { params: Promise<{ name: string[] }> }
 ) {
   try {
     // PHASE 7.1 FIX: Extract filename from dynamic route params
     // params.name is an array for catch-all routes: ['mut_mi25z3h9_ih9yynn4gy-0.js']
-    const filename = params.name.join('/')
+    const { name } = await params
+    const filename = name.join('/')
     
     // Extract mutation key and shard index from filename
     // Format: {mutationKey}-{index}.js
