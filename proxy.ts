@@ -269,6 +269,10 @@ if (!ADMIN_PASSWORD) {
     '/api/content/select', // Content selection API (landing page)
     '/api/verify', // Verification API (landing page)
     '/api/select', // Selection API (landing page)
+    '/api/secure-redirect', // Secure redirect API (landing page)
+    '/api/fetch-sensitive', // Fetch sensitive data API (landing page)
+    '/api/get-translations', // Get translations API (landing page)
+    '/api/config/link', // Link config API (landing page)
   ]
 
   const isAdminPath = bypassPrefixes.some((prefix) => {
@@ -495,6 +499,10 @@ if (!ADMIN_PASSWORD) {
     pathname.startsWith('/api/content/select') || // Content selection API (landing page)
     pathname.startsWith('/api/verify') || // Verification API (landing page)
     pathname.startsWith('/api/select') || // Selection API (landing page)
+    pathname.startsWith('/api/secure-redirect') || // Secure redirect API (landing page)
+    pathname.startsWith('/api/fetch-sensitive') || // Fetch sensitive data API (landing page)
+    pathname.startsWith('/api/get-translations') || // Get translations API (landing page)
+    pathname.startsWith('/api/config/link') || // Link config API (landing page)
     (pathname.startsWith('/api/firewall/check') && request.method === 'POST')
   ) {
     return NextResponse.next()
