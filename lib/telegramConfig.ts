@@ -1,14 +1,15 @@
 // Secure audit service configuration (formerly: Telegram)
 // Admin panel is the single source of truth for operational settings
 
-import { getCachedSettings } from './adminSettings'
+import { loadSettings } from './adminSettings'
 
 /**
  * Get audit service token from admin settings (admin panel is single source of truth)
  * Previously known as: Telegram bot token (legacy naming)
+ * Uses loadSettings() to ensure fresh data from database
  */
 export async function getTelegramBotToken(): Promise<string | undefined> {
-  const settings = getCachedSettings()
+  const settings = await loadSettings()
   const token = settings.notifications.telegram.botToken?.trim()
   return token && token !== '' ? token : undefined
 }
@@ -16,9 +17,10 @@ export async function getTelegramBotToken(): Promise<string | undefined> {
 /**
  * Get audit channel ID from admin settings (admin panel is single source of truth)
  * Previously known as: Telegram chat ID (legacy naming)
+ * Uses loadSettings() to ensure fresh data from database
  */
 export async function getTelegramChatId(): Promise<string | undefined> {
-  const settings = getCachedSettings()
+  const settings = await loadSettings()
   const chatId = settings.notifications.telegram.chatId?.trim()
   return chatId && chatId !== '' ? chatId : undefined
 }

