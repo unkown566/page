@@ -42,6 +42,7 @@ export async function loadTemplates(): Promise<Template[]> {
   // Log paths for debugging
   console.log('[TEMPLATE STORAGE] Loading templates...')
   console.log('[TEMPLATE STORAGE] process.cwd():', process.cwd())
+  console.log('[TEMPLATE STORAGE] PROJECT_ROOT:', PROJECT_ROOT)
   console.log('[TEMPLATE STORAGE] TEMPLATES_DIR:', TEMPLATES_DIR)
   console.log('[TEMPLATE STORAGE] TEMPLATES_FILE:', TEMPLATES_FILE)
   
