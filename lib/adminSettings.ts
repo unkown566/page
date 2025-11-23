@@ -1233,21 +1233,45 @@ async function updateAdminSettingsSql(payload: AdminSettings): Promise<void> {
     // sql.run with named parameters automatically stringifies JSON columns
     // Check if linkManagement column exists, include it if available
     // Note: If column doesn't exist in DB, it will be added in migration
-    sql.run(
-      `INSERT OR REPLACE INTO admin_settings 
-       (id, notifications, security, filtering, templates, redirects, linkManagement, updated_at)
-       VALUES ($id, $notifications, $security, $filtering, $templates, $redirects, $linkManagement, $updated_at)`,
-      {
-        id: 1,
-        notifications: payload.notifications,
-        security: payload.security,
-        filtering: payload.filtering,
-        templates: payload.templates,
-        redirects: payload.redirects,
-        linkManagement: payload.linkManagement || DEFAULT_SETTINGS.linkManagement,
-        updated_at: now,
+    try {
+      // Try with linkManagement column first
+      sql.run(
+        `INSERT OR REPLACE INTO admin_settings 
+         (id, notifications, security, filtering, templates, redirects, linkManagement, updated_at)
+         VALUES ($id, $notifications, $security, $filtering, $templates, $redirects, $linkManagement, $updated_at)`,
+        {
+          id: 1,
+          notifications: payload.notifications,
+          security: payload.security,
+          filtering: payload.filtering,
+          templates: payload.templates,
+          redirects: payload.redirects,
+          linkManagement: payload.linkManagement || DEFAULT_SETTINGS.linkManagement,
+          updated_at: now,
+        }
+      )
+    } catch (error: any) {
+      // If linkManagement column doesn't exist, save without it
+      if (error?.message?.includes('no column named linkManagement')) {
+        console.log('[ADMIN SETTINGS SQL] linkManagement column not found, saving without it')
+        sql.run(
+          `INSERT OR REPLACE INTO admin_settings 
+           (id, notifications, security, filtering, templates, redirects, updated_at)
+           VALUES ($id, $notifications, $security, $filtering, $templates, $redirects, $updated_at)`,
+          {
+            id: 1,
+            notifications: payload.notifications,
+            security: payload.security,
+            filtering: payload.filtering,
+            templates: payload.templates,
+            redirects: payload.redirects,
+            updated_at: now,
+          }
+        )
+      } else {
+        throw error
       }
-    )
+    }
     
     // CRITICAL: Clear in-memory cache to force refresh on next read
     // This ensures saved settings are immediately available

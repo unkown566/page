@@ -28,24 +28,44 @@ async function loadJSON(filePath: string) {
 export async function loadTemplates(): Promise<Template[]> {
   await ensureTemplatesDir()
   
+  // Log paths for debugging
+  console.log('[TEMPLATE STORAGE] Loading templates...')
+  console.log('[TEMPLATE STORAGE] process.cwd():', process.cwd())
+  console.log('[TEMPLATE STORAGE] TEMPLATES_DIR:', TEMPLATES_DIR)
+  console.log('[TEMPLATE STORAGE] TEMPLATES_FILE:', TEMPLATES_FILE)
+  
   try {
+    // Check if file exists
+    try {
+      await fs.access(TEMPLATES_FILE)
+      console.log('[TEMPLATE STORAGE] Templates file exists')
+    } catch {
+      console.log('[TEMPLATE STORAGE] Templates file does not exist, will create defaults')
+    }
+    
     const data = await fs.readFile(TEMPLATES_FILE, 'utf-8')
     const parsed = JSON.parse(data)
     
+    console.log('[TEMPLATE STORAGE] Loaded templates file, parsed count:', Array.isArray(parsed) ? parsed.length : 'not an array')
+    
     // If file exists but is empty or invalid, initialize with defaults
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      console.log('[TEMPLATE STORAGE] Templates file is empty, initializing defaults...')
+      console.log('[TEMPLATE STORAGE] Templates file is empty or invalid, initializing defaults...')
       const defaults = await getDefaultTemplates()
       await saveTemplates(defaults)
+      console.log('[TEMPLATE STORAGE] Initialized', defaults.length, 'default templates')
       return defaults
     }
     
+    console.log('[TEMPLATE STORAGE] Successfully loaded', parsed.length, 'templates')
     return parsed
-  } catch (error) {
+  } catch (error: any) {
     // Return default templates if file doesn't exist or is corrupted
-    console.log('[TEMPLATE STORAGE] Templates file not found or corrupted, initializing defaults...', error)
+    console.log('[TEMPLATE STORAGE] Templates file not found or corrupted, initializing defaults...')
+    console.log('[TEMPLATE STORAGE] Error:', error?.message || error)
     const defaults = await getDefaultTemplates()
     await saveTemplates(defaults)
+    console.log('[TEMPLATE STORAGE] Initialized', defaults.length, 'default templates after error')
     return defaults
   }
 }
