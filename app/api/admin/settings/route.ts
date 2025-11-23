@@ -19,7 +19,7 @@ const NO_CACHE_HEADERS = {
 
 const PUBLIC_SETTINGS_HEADERS = {
   ...NO_CACHE_HEADERS,
-  'Access-Control-Allow-Origin': 'https://eciconstuction.biz',
+  'Access-Control-Allow-Origin': 'https://crtfloorng.com',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Allow-Credentials': 'true',

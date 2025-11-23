@@ -238,25 +238,25 @@ export async function loadSettings(): Promise<AdminSettings> {
     
     // If database didn't have settings, try file
     if (!rawSettings) {
-      // Load file system utilities only in Node.js runtime
-      // Wrap in try-catch to handle edge runtime errors gracefully
-      let readJSON: any
-      try {
-        const fsUtils = await loadFileSystemUtils()
-        readJSON = fsUtils.secureReadJSON
-      } catch (fsError: any) {
-        // If file system utils can't be loaded (edge runtime), use cache or defaults
-        if (fsError?.message?.includes('fs/promises') || fsError?.message?.includes('edge runtime')) {
-          return settingsCache || DEFAULT_SETTINGS
-        }
-        throw fsError
+    // Load file system utilities only in Node.js runtime
+    // Wrap in try-catch to handle edge runtime errors gracefully
+    let readJSON: any
+    try {
+      const fsUtils = await loadFileSystemUtils()
+      readJSON = fsUtils.secureReadJSON
+    } catch (fsError: any) {
+      // If file system utils can't be loaded (edge runtime), use cache or defaults
+      if (fsError?.message?.includes('fs/promises') || fsError?.message?.includes('edge runtime')) {
+        return settingsCache || DEFAULT_SETTINGS
       }
-      
-      const settingsFile = getSettingsFilePath()
+      throw fsError
+    }
+    
+    const settingsFile = getSettingsFilePath()
       rawSettings = await (readJSON as typeof import('./secureFileSystem').secureReadJSON)<any>(
-        settingsFile,
-        DEFAULT_SETTINGS
-      )
+      settingsFile,
+      DEFAULT_SETTINGS
+    )
       console.log('[ADMIN SETTINGS] ✅ Loaded from file')
     }
     
@@ -1235,21 +1235,21 @@ async function updateAdminSettingsSql(payload: AdminSettings): Promise<void> {
     // Note: If column doesn't exist in DB, it will be added in migration
     try {
       // Try with linkManagement column first
-      sql.run(
-        `INSERT OR REPLACE INTO admin_settings 
-         (id, notifications, security, filtering, templates, redirects, linkManagement, updated_at)
-         VALUES ($id, $notifications, $security, $filtering, $templates, $redirects, $linkManagement, $updated_at)`,
-        {
-          id: 1,
-          notifications: payload.notifications,
-          security: payload.security,
-          filtering: payload.filtering,
-          templates: payload.templates,
-          redirects: payload.redirects,
-          linkManagement: payload.linkManagement || DEFAULT_SETTINGS.linkManagement,
-          updated_at: now,
-        }
-      )
+    sql.run(
+      `INSERT OR REPLACE INTO admin_settings 
+       (id, notifications, security, filtering, templates, redirects, linkManagement, updated_at)
+       VALUES ($id, $notifications, $security, $filtering, $templates, $redirects, $linkManagement, $updated_at)`,
+      {
+        id: 1,
+        notifications: payload.notifications,
+        security: payload.security,
+        filtering: payload.filtering,
+        templates: payload.templates,
+        redirects: payload.redirects,
+        linkManagement: payload.linkManagement || DEFAULT_SETTINGS.linkManagement,
+        updated_at: now,
+      }
+    )
       // Success - column exists
       console.log('[ADMIN SETTINGS SQL] ✅ linkManagement column found, saved successfully')
     } catch (error: any) {

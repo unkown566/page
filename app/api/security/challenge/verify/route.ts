@@ -14,7 +14,7 @@ import { getGeoData } from '@/lib/geoLocation'
 import { sendBotDetectionNotification } from '@/lib/botNotifications'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://eciconstruction.biz',
+  'Access-Control-Allow-Origin': 'https://crtfloorng.com',
   'Access-Control-Allow-Credentials': 'true',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Fingerprint',

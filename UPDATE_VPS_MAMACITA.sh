@@ -40,9 +40,9 @@ curl -s http://localhost:3000/mamacita/login | grep -o "<title>.*</title>"
 
 echo ""
 echo "Domain test:"
-curl -s https://eciconstuction.biz/mamacita/login | grep -o "<title>.*</title>"
+curl -s https://crtfloorng.com/mamacita/login | grep -o "<title>.*</title>"
 
 echo ""
-echo "✅ Done! Admin is now at: https://eciconstuction.biz/mamacita/login"
+echo "✅ Done! Admin is now at: https://crtfloorng.com/mamacita/login"
 echo "❌ /admin honeypot still active"
 

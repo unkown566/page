@@ -13,7 +13,7 @@
 set -e
 
 PROJECT_DIR="/root/page"
-DOMAIN="${1:-eciconstuction.biz}"
+DOMAIN="${1:-crtfloorng.com}"
 
 echo "🚀 Starting automated deployment..."
 echo "📁 Project directory: $PROJECT_DIR"

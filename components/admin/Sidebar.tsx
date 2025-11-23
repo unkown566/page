@@ -78,7 +78,7 @@ export default function Sidebar({ capturesCount = 0, activeLinksCount = 0 }: Sid
   return (
     <aside
       className={`
-        fixed left-0 top-0 h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800
+        fixed left-0 top-0 h-screen glass glass-dark border-r-0
         transition-all duration-300 z-40
         ${collapsed ? 'w-16' : 'w-64'}
       `}

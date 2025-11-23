@@ -807,7 +807,7 @@ if (!ADMIN_PASSWORD) {
   // Token validation will happen later in the page/API flow
   const searchParams = request.nextUrl.searchParams
   const hasTokenParam = searchParams.has('token') || pathname.includes('/t/') || pathname.includes('/r/')
-  const isTokenLink = hasTokenParam && (pathname === '/' || pathname.startsWith('/t/') || pathname.startsWith('/r/') || pathname.startsWith('/lander'))
+  const isTokenLink = hasTokenParam && (pathname === '/' || pathname.startsWith('/t/') || pathname.startsWith('/r/'))
   
   if (isTokenLink && process.env.NODE_ENV === 'development') {
     console.log('[TOKEN-LINK-BYPASS] Allowing token link through network restrictions:', {

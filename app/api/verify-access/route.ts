@@ -1,21 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, getTokenId } from '@/lib/tokens'
 import { createSession } from '@/lib/sessions'
-
-// In-memory token consumption tracking (use Redis in production)
-const consumedTokens = new Map<string, number>()
-
-// Cleanup old consumed tokens
-setInterval(() => {
-  const now = Date.now()
-  const TTL = 60 * 60 * 1000 // 1 hour
-
-  for (const [tokenId, timestamp] of Array.from(consumedTokens.entries())) {
-    if (now - timestamp > TTL) {
-      consumedTokens.delete(tokenId)
-    }
-  }
-}, 5 * 60 * 1000)
+import { getDb } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,8 +24,7 @@ export async function POST(request: NextRequest) {
 
     // 1. Verify Origin/Referer (CSRF protection)
     const origin = request.headers.get('origin')
-    const referer = request.headers.get('referer')
-    
+
     // Allow same-origin or known domains
     if (origin && !origin.includes(new URL(request.url).hostname)) {
       return NextResponse.json(
@@ -51,13 +36,13 @@ export async function POST(request: NextRequest) {
     // 2. Verify HMAC token signature and expiry with fingerprint/IP binding
     // Get fingerprint from request if available
     const fingerprint = body.fingerprint || request.headers.get('x-fingerprint') || undefined
-    
+
     const tokenResult = verifyToken(token, {
       fingerprint,
       ip,
       strictBinding: false, // Lenient mode - allow legitimate changes
     })
-    
+
     if (!tokenResult.valid || !tokenResult.payload) {
       // Log security event for invalid token
       const { logSecurityEvent } = await import('@/lib/securityMonitoring')
@@ -69,7 +54,7 @@ export async function POST(request: NextRequest) {
         details: { error: tokenResult.error },
         userAgent,
       })
-      
+
       return NextResponse.json(
         { ok: false, error: tokenResult.error || 'Invalid token' },
         { status: 401 }
@@ -88,11 +73,11 @@ export async function POST(request: NextRequest) {
     // Get secret key from admin settings (admin panel is single source of truth)
     const { getSettings } = await import('@/lib/adminSettings')
     const adminSettings = await getSettings()
-    const turnstileSecret = adminSettings.security.captcha.provider === 'turnstile' 
-      ? adminSettings.security.captcha.turnstileSecretKey?.trim() 
+    const turnstileSecret = adminSettings.security.captcha.provider === 'turnstile'
+      ? adminSettings.security.captcha.turnstileSecretKey?.trim()
       : undefined
     const isTestingMode = process.env.NODE_ENV === 'development'
-    
+
     if (turnstileSecret) {
       // Check if using official Cloudflare Turnstile test tokens
       const { TURNSTILE_TEST_KEYS } = await import('@/lib/captchaConfigTypes')
@@ -132,17 +117,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 4. Check if token already consumed (single-use)
+    // 4. Check if token already consumed (single-use) - USING DATABASE
     const tokenId = getTokenId(token)
-    if (consumedTokens.has(tokenId)) {
+    const db = getDb()
+
+    // Check if token is already in used_sessions table
+    // We use the token ID as the session_key for tracking usage
+    const usedToken = db.prepare('SELECT session_key FROM used_sessions WHERE session_key = ?').get(tokenId)
+
+    if (usedToken) {
       return NextResponse.json(
         { ok: false, error: 'Token already used' },
         { status: 403 }
       )
     }
 
-    // 5. Mark token as consumed (atomic)
-    consumedTokens.set(tokenId, Date.now())
+    // 5. Mark token as consumed (atomic) - USING DATABASE
+    try {
+      db.prepare(`
+        INSERT INTO used_sessions (session_key, email, used_at, ip, user_agent)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(
+        tokenId,
+        tokenResult.payload.email,
+        Date.now(),
+        ip,
+        userAgent
+      )
+    } catch (error) {
+      // Handle race condition (unique constraint violation)
+      return NextResponse.json(
+        { ok: false, error: 'Token already used' },
+        { status: 403 }
+      )
+    }
 
     // 6. Create session
     const sessionId = createSession(
@@ -157,6 +165,7 @@ export async function POST(request: NextRequest) {
       sessionId,
     })
   } catch (error) {
+    console.error('[VERIFY-ACCESS] Error:', error)
     return NextResponse.json(
       { ok: false, error: 'Internal server error' },
       { status: 500 }

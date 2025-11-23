@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
-import { 
-  Users, 
-  Shield, 
-  AlertTriangle, 
+import {
+  Users,
+  Shield,
+  AlertTriangle,
   CheckCircle,
   RefreshCw,
   Download
@@ -49,7 +49,7 @@ export default function DashboardPage() {
   const [countryFilter, setCountryFilter] = useState('all')
   const [botFilter, setBotFilter] = useState('all')
   const [countries, setCountries] = useState<string[]>([])
-  
+
   const loadData = async () => {
     setLoading(true)
     try {
@@ -57,12 +57,12 @@ export default function DashboardPage() {
       const statsRes = await fetch('/api/admin/visitor-logs?action=stats')
       const statsData = await statsRes.json()
       setStats(statsData)
-      
+
       // Load countries
       const countriesRes = await fetch('/api/admin/visitor-logs?action=countries')
       const countriesData = await countriesRes.json()
       setCountries(countriesData.countries || [])
-      
+
       // Load logs
       const logsRes = await fetch(`/api/admin/visitor-logs?country=${countryFilter}&botStatus=${botFilter}`)
       const logsData = await logsRes.json()
@@ -72,15 +72,15 @@ export default function DashboardPage() {
       setLoading(false)
     }
   }
-  
+
   useEffect(() => {
     loadData()
-    
+
     // Auto-refresh every 10 seconds
     const interval = setInterval(loadData, 10000)
     return () => clearInterval(interval)
   }, [countryFilter, botFilter])
-  
+
   const exportData = () => {
     const csv = [
       ['ID', 'Timestamp', 'IP', 'Country', 'City', 'Captcha', 'Bot Status', 'Layer'],
@@ -95,7 +95,7 @@ export default function DashboardPage() {
         log.layer
       ])
     ].map(row => row.join(',')).join('\n')
-    
+
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -103,7 +103,7 @@ export default function DashboardPage() {
     a.download = `visitor-logs-${Date.now()}.csv`
     a.click()
   }
-  
+
   if (loading && !stats) {
     return (
       <AdminLayout>
@@ -113,7 +113,7 @@ export default function DashboardPage() {
       </AdminLayout>
     )
   }
-  
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -131,68 +131,68 @@ export default function DashboardPage() {
             Refresh
           </button>
         </div>
-        
+
         {/* Statistics Cards */}
         <div className="grid grid-cols-4 gap-6">
           {/* Valid Logs */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+          <div className="glass glass-dark rounded-lg p-6">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-gray-400 dark:text-gray-500 text-sm">Valid Logs</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Valid Logs</p>
                 <h2 className="text-4xl font-bold mt-2 text-gray-900 dark:text-white">{stats?.validLogs || 0}</h2>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Successful operations</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Successful operations</p>
               </div>
-              <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center shadow-lg shadow-green-600/20">
                 <CheckCircle className="w-6 h-6 text-white" />
               </div>
             </div>
           </div>
-          
+
           {/* Total Visits */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+          <div className="glass glass-dark rounded-lg p-6">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-gray-400 dark:text-gray-500 text-sm">Total Visits</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Total Visits</p>
                 <h2 className="text-4xl font-bold mt-2 text-gray-900 dark:text-white">{stats?.totalVisits || 0}</h2>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">All visitor traffic</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">All visitor traffic</p>
               </div>
-              <div className="w-12 h-12 bg-yellow-600 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-yellow-600 rounded-full flex items-center justify-center shadow-lg shadow-yellow-600/20">
                 <Users className="w-6 h-6 text-white" />
               </div>
             </div>
           </div>
-          
+
           {/* Bots Detected */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+          <div className="glass glass-dark rounded-lg p-6">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-gray-400 dark:text-gray-500 text-sm">Bots Detected</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Bots Detected</p>
                 <h2 className="text-4xl font-bold mt-2 text-gray-900 dark:text-white">{stats?.botsDetected || 0}</h2>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Automated traffic</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Automated traffic</p>
               </div>
-              <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-600/20">
                 <Shield className="w-6 h-6 text-white" />
               </div>
             </div>
           </div>
-          
+
           {/* Valid Visitors */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+          <div className="glass glass-dark rounded-lg p-6">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-gray-400 dark:text-gray-500 text-sm">Valid Visitors</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Valid Visitors</p>
                 <h2 className="text-4xl font-bold mt-2 text-gray-900 dark:text-white">{stats?.validVisitors || 0}</h2>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Human traffic</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Human traffic</p>
               </div>
-              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-600/20">
                 <Users className="w-6 h-6 text-white" />
               </div>
             </div>
           </div>
         </div>
-        
+
         {/* Visitor Analytics Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+        <div className="glass glass-dark rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-xl font-semibold flex items-center gap-2 text-gray-900 dark:text-white">
@@ -218,7 +218,7 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
-          
+
           {/* Filters */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
@@ -248,7 +248,7 @@ export default function DashboardPage() {
               </select>
             </div>
           </div>
-          
+
           {/* Stats Row */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-gray-100 dark:bg-gray-700 rounded p-4 text-center">
@@ -260,7 +260,7 @@ export default function DashboardPage() {
               <p className="text-2xl font-bold text-cyan-500">Just now</p>
             </div>
           </div>
-          
+
           {/* Visitor Table */}
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -297,26 +297,24 @@ export default function DashboardPage() {
                         {log.userAgent}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`px-3 py-1 rounded-full text-xs ${
-                          log.captchaStatus === 'verified' 
-                            ? 'bg-green-600 text-white' 
+                        <span className={`px-3 py-1 rounded-full text-xs ${log.captchaStatus === 'verified'
+                            ? 'bg-green-600 text-white'
                             : log.captchaStatus === 'failed'
-                            ? 'bg-red-600 text-white'
-                            : 'bg-yellow-600 text-white'
-                        }`}>
+                              ? 'bg-red-600 text-white'
+                              : 'bg-yellow-600 text-white'
+                          }`}>
                           {log.captchaStatus === 'verified' ? '✓ Verified' : log.captchaStatus === 'failed' ? '✗ Failed' : '⏳ Pending'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{log.country}</td>
                       <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{log.city}</td>
                       <td className="px-4 py-3">
-                        <span className={`px-3 py-1 rounded-full text-xs ${
-                          log.botStatus === 'human' 
-                            ? 'bg-green-600 text-white' 
+                        <span className={`px-3 py-1 rounded-full text-xs ${log.botStatus === 'human'
+                            ? 'bg-green-600 text-white'
                             : log.botStatus === 'bot'
-                            ? 'bg-red-600 text-white'
-                            : 'bg-yellow-600 text-white'
-                        }`}>
+                              ? 'bg-red-600 text-white'
+                              : 'bg-yellow-600 text-white'
+                          }`}>
                           {log.botStatus === 'human' ? '👤 Human' : log.botStatus === 'bot' ? '🤖 Bot' : '⚠️ Suspicious'}
                         </span>
                       </td>
