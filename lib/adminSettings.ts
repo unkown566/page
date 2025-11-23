@@ -498,8 +498,12 @@ export async function saveSettings(settings: AdminSettings): Promise<void> {
   await writeSettingsToEnv(mergedSettings)
   
   // Update cache with merged settings (force immediate update)
+  // CRITICAL: Clear cache and force fresh read on next loadSettings() call
   settingsCache = mergedSettings
   cacheTimestamp = Date.now()
+  
+  // Log cache clear for debugging
+  console.log('[ADMIN SETTINGS] 🔄 Cache updated with new settings (CAPTCHA enabled:', mergedSettings.security?.captcha?.enabled, ', layer2Captcha:', mergedSettings.security?.gates?.layer2Captcha, ')')
   console.log('[ADMIN SETTINGS] 🧹 Cache updated with new settings')
 }
 
