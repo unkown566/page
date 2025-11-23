@@ -121,6 +121,8 @@ function mapRowToCapturedEmail(row: any): CapturedEmail {
     ...row,
     passwords: parseJSON(row.passwords) || [],
     verified: Boolean(row.verified),
+    // Handle both snake_case (captured_at) and camelCase (capturedAt) column names
+    capturedAt: row.captured_at || row.capturedAt || Date.now(),
   }
 }
 
