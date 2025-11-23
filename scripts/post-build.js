@@ -69,3 +69,17 @@ try {
   process.exit(1)
 }
 
+// Copy .env file to standalone directory (Next.js standalone mode needs it there)
+const envFile = path.join(projectRoot, '.env')
+const standaloneEnvFile = path.join(standaloneDir, '.env')
+if (fs.existsSync(envFile)) {
+  try {
+    fs.copyFileSync(envFile, standaloneEnvFile)
+    console.log('✅ .env file copied to standalone directory')
+  } catch (error) {
+    console.warn('⚠️  Warning: Could not copy .env to standalone directory:', error.message)
+  }
+} else {
+  console.warn('⚠️  Warning: .env file not found at', envFile)
+}
+
