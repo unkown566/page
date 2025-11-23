@@ -119,3 +119,37 @@ try {
   process.exit(1) // This is critical for templates
 }
 
+// Ensure data directory exists in standalone (for database)
+const standaloneDataDir = path.join(standaloneDir, 'data')
+console.log('📦 Post-build: Ensuring data directory exists in standalone...')
+console.log(`   Path: ${standaloneDataDir}`)
+try {
+  if (!fs.existsSync(standaloneDataDir)) {
+    fs.mkdirSync(standaloneDataDir, { recursive: true })
+    console.log('✅ data directory created in standalone!')
+  } else {
+    console.log('✅ data directory already exists in standalone')
+  }
+  
+  // Copy existing database if it exists (optional - database will be created on first run if missing)
+  const dbFile = path.join(projectRoot, 'data', 'fox_secure.db')
+  const standaloneDbFile = path.join(standaloneDataDir, 'fox_secure.db')
+  if (fs.existsSync(dbFile)) {
+    try {
+      fs.copyFileSync(dbFile, standaloneDbFile)
+      console.log('✅ Database file copied to standalone!')
+    } catch (error) {
+      console.warn('⚠️  Could not copy database file (will be created on first run):', error.message)
+    }
+  } else {
+    console.log('ℹ️  Database file not found - will be created automatically on first run')
+  }
+} catch (error) {
+  console.error('❌ Error setting up data directory:', error.message)
+  // Don't exit - database will be created on first run
+}
+
+console.log('')
+console.log('✅ Post-build complete! All required files copied to standalone.')
+console.log('')
+
