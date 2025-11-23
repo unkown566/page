@@ -8,7 +8,25 @@ export const runtime = 'nodejs'
 // GET - List all templates
 export async function GET(request: NextRequest) {
   try {
-    let templates = await loadTemplates()
+    console.log('[TEMPLATES API] GET request received')
+    console.log('[TEMPLATES API] process.cwd():', process.cwd())
+    
+    let templates: Template[] = []
+    
+    try {
+      templates = await loadTemplates()
+      console.log('[TEMPLATES API] loadTemplates() returned', templates?.length || 0, 'templates')
+    } catch (loadError: any) {
+      console.error('[TEMPLATES API] Error in loadTemplates():', loadError?.message || loadError)
+      console.error('[TEMPLATES API] Error stack:', loadError?.stack)
+      
+      // loadTemplates should auto-initialize, but if it fails, return error
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to load templates',
+        details: loadError?.message || String(loadError),
+      }, { status: 500 })
+    }
     
     // If no templates exist, this means loadTemplates should have initialized them
     // But if it didn't, ensure we have at least one
@@ -32,7 +50,18 @@ export async function GET(request: NextRequest) {
         // File doesn't exist, that's fine
         console.log('[TEMPLATES API] Templates file not found, will be created by loadTemplates')
       }
-      templates = await loadTemplates()
+      
+      try {
+        templates = await loadTemplates()
+        console.log('[TEMPLATES API] After re-init, got', templates?.length || 0, 'templates')
+      } catch (reloadError: any) {
+        console.error('[TEMPLATES API] Error reloading templates:', reloadError?.message || reloadError)
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to reload templates',
+          details: reloadError?.message || String(reloadError),
+        }, { status: 500 })
+      }
     }
     
     // Filter by enabled status if requested
@@ -43,16 +72,20 @@ export async function GET(request: NextRequest) {
       ? templates.filter(t => t.enabled)
       : templates
     
+    console.log('[TEMPLATES API] Returning', filtered.length, 'templates (onlyEnabled:', onlyEnabled, ')')
+    
     return NextResponse.json({
       success: true,
       templates: filtered,
       count: filtered.length,
     })
-  } catch (error) {
-    console.error('[TEMPLATES API] Error loading templates:', error)
+  } catch (error: any) {
+    console.error('[TEMPLATES API] Unexpected error:', error?.message || error)
+    console.error('[TEMPLATES API] Error stack:', error?.stack)
     return NextResponse.json({
       success: false,
       error: 'Failed to load templates',
+      details: error?.message || String(error),
     }, { status: 500 })
   }
 }
