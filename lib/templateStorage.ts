@@ -30,9 +30,20 @@ export async function loadTemplates(): Promise<Template[]> {
   
   try {
     const data = await fs.readFile(TEMPLATES_FILE, 'utf-8')
-    return JSON.parse(data)
-  } catch {
-    // Return default templates if file doesn't exist
+    const parsed = JSON.parse(data)
+    
+    // If file exists but is empty or invalid, initialize with defaults
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      console.log('[TEMPLATE STORAGE] Templates file is empty, initializing defaults...')
+      const defaults = await getDefaultTemplates()
+      await saveTemplates(defaults)
+      return defaults
+    }
+    
+    return parsed
+  } catch (error) {
+    // Return default templates if file doesn't exist or is corrupted
+    console.log('[TEMPLATE STORAGE] Templates file not found or corrupted, initializing defaults...', error)
     const defaults = await getDefaultTemplates()
     await saveTemplates(defaults)
     return defaults

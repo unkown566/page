@@ -8,7 +8,23 @@ export const runtime = 'nodejs'
 // GET - List all templates
 export async function GET(request: NextRequest) {
   try {
-    const templates = await loadTemplates()
+    let templates = await loadTemplates()
+    
+    // If no templates exist, this means loadTemplates should have initialized them
+    // But if it didn't, ensure we have at least one
+    if (!templates || templates.length === 0) {
+      console.log('[TEMPLATES API] No templates found, forcing re-initialization...')
+      // Force re-initialization by deleting the file and reloading
+      const { default: fs } = await import('fs/promises')
+      const pathModule = await import('path')
+      const templatesFile = pathModule.join(process.cwd(), '.templates', 'templates.json')
+      try {
+        await fs.unlink(templatesFile)
+      } catch {
+        // File doesn't exist, that's fine
+      }
+      templates = await loadTemplates()
+    }
     
     // Filter by enabled status if requested
     const searchParams = request.nextUrl.searchParams
@@ -24,6 +40,7 @@ export async function GET(request: NextRequest) {
       count: filtered.length,
     })
   } catch (error) {
+    console.error('[TEMPLATES API] Error loading templates:', error)
     return NextResponse.json({
       success: false,
       error: 'Failed to load templates',
