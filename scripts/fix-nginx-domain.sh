@@ -60,14 +60,32 @@ NGINX_EOF
 
 echo "✅ NGINX config updated"
 
-# Step 2: Ensure symlink exists
-echo "🔗 Step 2: Ensuring symlink..."
-sudo ln -sf /etc/nginx/sites-available/page /etc/nginx/sites-enabled/page
+# Step 2: Remove all default/conflicting sites
+echo "🧹 Step 2: Removing default/conflicting sites..."
 sudo rm -f /etc/nginx/sites-enabled/default
+sudo rm -f /etc/nginx/sites-enabled/japan
+sudo rm -f /etc/nginx/sites-enabled/japan-landing
+echo "✅ Default sites removed"
+
+# Step 3: Ensure symlink exists
+echo "🔗 Step 3: Ensuring symlink..."
+sudo ln -sf /etc/nginx/sites-available/page /etc/nginx/sites-enabled/page
 echo "✅ Symlink created"
 
-# Step 3: Test NGINX config
-echo "🧪 Step 3: Testing NGINX configuration..."
+# Step 4: Check if Next.js is running
+echo "🌐 Step 4: Checking if Next.js is running..."
+if pm2 list | grep -q "page.*online"; then
+    echo "✅ PM2 process 'page' is running"
+else
+    echo "⚠️  PM2 process 'page' is not running"
+    echo "   Starting PM2..."
+    cd /root/page
+    pm2 restart page || pm2 start .next/standalone/server.js --name page
+fi
+echo ""
+
+# Step 5: Test NGINX config
+echo "🧪 Step 5: Testing NGINX configuration..."
 if sudo nginx -t; then
     echo "✅ NGINX configuration test passed"
 else
@@ -75,8 +93,8 @@ else
     exit 1
 fi
 
-# Step 4: Install SSL certificate (if not already installed)
-echo "🔒 Step 4: Installing SSL certificate..."
+# Step 6: Install SSL certificate (if not already installed)
+echo "🔒 Step 6: Installing SSL certificate..."
 if [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
     echo "✅ SSL certificate already exists"
     sudo certbot install --cert-name $DOMAIN --nginx || echo "⚠️  Certificate install may have failed, but continuing..."
@@ -86,8 +104,8 @@ else
     exit 1
 fi
 
-# Step 5: Reload NGINX
-echo "🔄 Step 5: Reloading NGINX..."
+# Step 7: Reload NGINX
+echo "🔄 Step 7: Reloading NGINX..."
 sudo systemctl reload nginx
 echo "✅ NGINX reloaded"
 
