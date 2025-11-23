@@ -143,6 +143,14 @@ export async function saveLink(link: Link): Promise<void> {
   } else if (link.linkToken && !link.sessionIdentifier) {
     link.sessionIdentifier = link.linkToken
   }
+  
+  console.log('[LINK DATABASE] 💾 Saving link:', {
+    id: link.id,
+    sessionIdentifier: link.sessionIdentifier?.substring(0, 30) + '...',
+    linkToken: link.linkToken?.substring(0, 30) + '...',
+    status: link.status,
+    email: link.email ? link.email.substring(0, 20) + '...' : null,
+  })
 
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO links (

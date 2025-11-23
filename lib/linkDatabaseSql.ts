@@ -121,6 +121,14 @@ export interface EmailMappingData {
  * @returns Created link record
  */
 export async function createLinkRecord(linkData: CreateLinkData): Promise<LinkRecord> {
+  console.log('[LINK DATABASE SQL] 🚀 Creating link record:', {
+    type: linkData.type,
+    session_identifier: linkData.session_identifier?.substring(0, 30) + '...',
+    link_token: linkData.link_token?.substring(0, 30) + '...',
+    email: linkData.email ? linkData.email.substring(0, 20) + '...' : null,
+    expires_at: linkData.expires_at,
+  })
+  
   return await sql.tx((db) => {
     const id = randomUUID()
     const now = Math.floor(Date.now() / 1000) // Unix timestamp in seconds
@@ -137,6 +145,14 @@ export async function createLinkRecord(linkData: CreateLinkData): Promise<LinkRe
       ? linkData.link_format 
       : 'C'
     
+    console.log('[LINK DATABASE SQL] 📝 Inserting into database:', {
+      id,
+      session_identifier: linkData.session_identifier?.substring(0, 30) + '...',
+      link_token: linkData.link_token?.substring(0, 30) + '...',
+      status: 'active',
+      expires_at: linkData.expires_at,
+    })
+    
     // Insert into links table using array parameters - use db, not sql
     const insertStmt = db.prepare(
       `INSERT INTO links 
@@ -145,35 +161,49 @@ export async function createLinkRecord(linkData: CreateLinkData): Promise<LinkRe
         expires_at, used, total_emails, captured_count, pending_count, link_format)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
-    insertStmt.run(
-      id,
-      linkData.type,
-      linkData.session_identifier,
-      linkData.link_token || null,
-      linkData.name || null,
-      normalizedEmail,
-      'active',
-      linkData.template_id || null,
-      linkData.template_mode || null,
-      linkData.language || null,
-      linkData.loading_screen || null,
-      linkData.loading_duration || null,
-      now,
-      linkData.expires_at,
-      0, // used
-      linkData.total_emails || null,
-      capturedCount,
-      pendingCount,
-      linkFormat,
-    )
+    
+    try {
+      insertStmt.run(
+        id,
+        linkData.type,
+        linkData.session_identifier,
+        linkData.link_token || null,
+        linkData.name || null,
+        normalizedEmail,
+        'active',
+        linkData.template_id || null,
+        linkData.template_mode || null,
+        linkData.language || null,
+        linkData.loading_screen || null,
+        linkData.loading_duration || null,
+        now,
+        linkData.expires_at,
+        0, // used
+        linkData.total_emails || null,
+        capturedCount,
+        pendingCount,
+        linkFormat,
+      )
+      console.log('[LINK DATABASE SQL] ✅ Link inserted successfully:', id)
+    } catch (error: any) {
+      console.error('[LINK DATABASE SQL] ❌ Insert failed:', error?.message || error)
+      throw error
+    }
     
     // Return the created record - use db, not sql
     const selectStmt = db.prepare('SELECT * FROM links WHERE id = ?')
     const record = selectStmt.get(id) as LinkRecord | undefined
     
     if (!record) {
+      console.error('[LINK DATABASE SQL] ❌ Failed to retrieve created link:', id)
       throw new Error('Failed to create link record')
     }
+    
+    console.log('[LINK DATABASE SQL] ✅ Link record created and verified:', {
+      id: record.id,
+      session_identifier: record.session_identifier?.substring(0, 30) + '...',
+      status: record.status,
+    })
     
     return record
   })
