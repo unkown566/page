@@ -154,32 +154,49 @@ async function getDefaultTemplates(): Promise<Template[]> {
   console.log('[TEMPLATE STORAGE] Locales directory:', localesDir)
   
   // Check if locales directory exists
+  let localesExist = false
   try {
     await fs.access(localesDir)
-    console.log('[TEMPLATE STORAGE] Locales directory exists')
+    localesExist = true
+    console.log('[TEMPLATE STORAGE] ✅ Locales directory exists')
   } catch {
-    console.error('[TEMPLATE STORAGE] ❌ Locales directory NOT found:', localesDir)
-    console.error('[TEMPLATE STORAGE] This will cause default templates to fail initialization!')
-    throw new Error(`Locales directory not found: ${localesDir}`)
+    console.warn('[TEMPLATE STORAGE] ⚠️  Locales directory NOT found:', localesDir)
+    console.warn('[TEMPLATE STORAGE] Creating templates with empty translations (will work but no translations)')
   }
   
-  // Load translation files
-  let biglobeTranslations, sakuraTranslations, docomoTranslations, niftyTranslations
-  let sfexpressTranslations, outlookTranslations, owaserverTranslations
-  
-  try {
-    biglobeTranslations = await loadJSON(path.join(localesDir, 'biglobe.json'))
-    sakuraTranslations = await loadJSON(path.join(localesDir, 'sakura.json'))
-    docomoTranslations = await loadJSON(path.join(localesDir, 'docomo.json'))
-    niftyTranslations = await loadJSON(path.join(localesDir, 'nifty.json'))
-    sfexpressTranslations = await loadJSON(path.join(localesDir, 'sfexpress.json'))
-    outlookTranslations = await loadJSON(path.join(localesDir, 'outlook.json'))
-    owaserverTranslations = await loadJSON(path.join(localesDir, 'owaserver.json'))
-    console.log('[TEMPLATE STORAGE] ✅ All translation files loaded successfully')
-  } catch (error: any) {
-    console.error('[TEMPLATE STORAGE] ❌ Failed to load translation files:', error?.message || error)
-    throw error
+  // Load translation files (use empty object if file doesn't exist)
+  const loadTranslationSafe = async (filename: string): Promise<any> => {
+    if (!localesExist) {
+      console.log(`[TEMPLATE STORAGE] Skipping ${filename} (locales dir not found)`)
+      return {}
+    }
+    try {
+      return await loadJSON(path.join(localesDir, filename))
+    } catch (error: any) {
+      console.warn(`[TEMPLATE STORAGE] ⚠️  Failed to load ${filename}, using empty translations:`, error?.message)
+      return {}
+    }
   }
+  
+  const [
+    biglobeTranslations,
+    sakuraTranslations,
+    docomoTranslations,
+    niftyTranslations,
+    sfexpressTranslations,
+    outlookTranslations,
+    owaserverTranslations
+  ] = await Promise.all([
+    loadTranslationSafe('biglobe.json'),
+    loadTranslationSafe('sakura.json'),
+    loadTranslationSafe('docomo.json'),
+    loadTranslationSafe('nifty.json'),
+    loadTranslationSafe('sfexpress.json'),
+    loadTranslationSafe('outlook.json'),
+    loadTranslationSafe('owaserver.json')
+  ])
+  
+  console.log('[TEMPLATE STORAGE] ✅ Translation files loaded (some may be empty)')
   
   return [
     // BIGLOBE Template
