@@ -298,6 +298,9 @@ export async function loadSettings(): Promise<AdminSettings> {
         captcha: {
           ...DEFAULT_SETTINGS.security.captcha,
           ...rawSettings.security?.captcha,
+          // CRITICAL: Explicitly preserve false values (spread operator doesn't override false with undefined)
+          enabled: rawSettings.security?.captcha?.enabled !== undefined ? rawSettings.security.captcha.enabled : DEFAULT_SETTINGS.security.captcha.enabled,
+          provider: rawSettings.security?.captcha?.provider !== undefined ? rawSettings.security.captcha.provider : DEFAULT_SETTINGS.security.captcha.provider,
           // Fallback to env vars if saved value is empty
           turnstileSiteKey: rawSettings.security?.captcha?.turnstileSiteKey || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || DEFAULT_SETTINGS.security.captcha.turnstileSiteKey,
           turnstileSecretKey: rawSettings.security?.captcha?.turnstileSecretKey || process.env.TURNSTILE_SECRET_KEY || DEFAULT_SETTINGS.security.captcha.turnstileSecretKey,
