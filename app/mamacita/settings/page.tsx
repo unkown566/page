@@ -137,17 +137,37 @@ export default function SettingsPage() {
     // This prevents false values from being lost during save
     const settingsToSave = JSON.parse(JSON.stringify(settings))
     
-    // Explicitly ensure captcha.enabled and gates.layer2Captcha are booleans
-    if (settingsToSave.security?.captcha) {
-      settingsToSave.security.captcha.enabled = settingsToSave.security.captcha.enabled ?? false
-    }
-    if (settingsToSave.security?.gates) {
-      settingsToSave.security.gates.layer2Captcha = settingsToSave.security.gates.layer2Captcha ?? false
+    // Ensure all security settings have proper boolean values
+    if (settingsToSave.security) {
+      // Ensure captcha settings
+      if (settingsToSave.security.captcha) {
+        settingsToSave.security.captcha.enabled = settingsToSave.security.captcha.enabled ?? false
+      }
+      
+      // Ensure gates settings
+      if (settingsToSave.security.gates) {
+        settingsToSave.security.gates.layer1BotFilter = settingsToSave.security.gates.layer1BotFilter ?? false
+        settingsToSave.security.gates.layer1IpBlocklist = settingsToSave.security.gates.layer1IpBlocklist ?? false
+        settingsToSave.security.gates.layer1CloudflareBotManagement = settingsToSave.security.gates.layer1CloudflareBotManagement ?? false
+        settingsToSave.security.gates.layer1ScannerDetection = settingsToSave.security.gates.layer1ScannerDetection ?? false
+        settingsToSave.security.gates.layer2Captcha = settingsToSave.security.gates.layer2Captcha ?? false
+        settingsToSave.security.gates.layer3BotDelay = settingsToSave.security.gates.layer3BotDelay ?? false
+        settingsToSave.security.gates.layer4StealthVerification = settingsToSave.security.gates.layer4StealthVerification ?? false
+      }
+      
+      // Ensure botFilter settings
+      if (settingsToSave.security.botFilter) {
+        settingsToSave.security.botFilter.enabled = settingsToSave.security.botFilter.enabled ?? false
+        settingsToSave.security.botFilter.checkIPBlocklist = settingsToSave.security.botFilter.checkIPBlocklist ?? false
+        settingsToSave.security.botFilter.cloudflareBotManagement = settingsToSave.security.botFilter.cloudflareBotManagement ?? false
+        settingsToSave.security.botFilter.scannerDetection = settingsToSave.security.botFilter.scannerDetection ?? false
+      }
     }
     
     console.log('[SETTINGS PAGE] Saving with explicit values:', {
       'captcha.enabled': settingsToSave.security?.captcha?.enabled,
       'gates.layer2Captcha': settingsToSave.security?.gates?.layer2Captcha,
+      'botFilter.enabled': settingsToSave.security?.botFilter?.enabled,
     })
 
     try {
