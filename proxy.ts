@@ -484,7 +484,8 @@ if (!ADMIN_PASSWORD) {
     pathname.startsWith('/api/config/') ||
     pathname.startsWith('/api/link-config') ||
     pathname.startsWith('/api/email-from-token') ||
-  pathname.startsWith('/api/email-from-mapping') ||
+    pathname.startsWith('/api/email-from-mapping') ||
+    pathname.startsWith('/api/templates') || // Template management API
     (pathname.startsWith('/api/firewall/check') && request.method === 'POST')
   ) {
     return NextResponse.next()
