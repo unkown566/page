@@ -512,14 +512,25 @@ async function writeSettingsToEnv(settings: AdminSettings): Promise<void> {
     const fs = await import('fs/promises')
     const pathModule = await import('path')
     
-    const envPath = pathModule.join(process.cwd(), '.env')
+    // In standalone mode, process.cwd() is .next/standalone, so we need to go up
+    let projectRoot = process.cwd()
+    if (projectRoot.endsWith('.next/standalone')) {
+      projectRoot = pathModule.resolve(projectRoot, '../..')
+    }
+    
+    const envPath = pathModule.join(projectRoot, '.env')
+    console.log('[ADMIN SETTINGS] 📝 Writing to .env file at:', envPath)
+    console.log('[ADMIN SETTINGS] 📝 Current working directory:', process.cwd())
+    console.log('[ADMIN SETTINGS] 📝 Project root:', projectRoot)
     
     // Read existing .env file
     let envContent = ''
     try {
       envContent = await fs.readFile(envPath, 'utf-8')
-    } catch (error) {
+      console.log('[ADMIN SETTINGS] 📖 Read existing .env file, length:', envContent.length)
+    } catch (error: any) {
       // .env doesn't exist, start fresh
+      console.log('[ADMIN SETTINGS] 📝 .env file not found, creating new one:', error.message)
       envContent = ''
     }
     
@@ -881,9 +892,12 @@ async function writeSettingsToEnv(settings: AdminSettings): Promise<void> {
     await fs.writeFile(envPath, newContent, 'utf-8')
     await fs.chmod(envPath, 0o600) // Secure permissions
     
-    console.log('[ADMIN SETTINGS] ✅ Settings written to .env file')
-  } catch (error) {
-    console.error('[ADMIN SETTINGS] ⚠️  Failed to write to .env file:', error)
+    console.log('[ADMIN SETTINGS] ✅ Settings written to .env file successfully')
+    console.log('[ADMIN SETTINGS] 📊 .env file size:', newContent.length, 'bytes')
+    console.log('[ADMIN SETTINGS] 📊 Total environment variables written:', envVars.size)
+  } catch (error: any) {
+    console.error('[ADMIN SETTINGS] ❌ Failed to write to .env file:', error.message)
+    console.error('[ADMIN SETTINGS] ❌ Error stack:', error.stack)
     // Don't throw - .env write is optional, .config-cache.json is the source of truth
   }
 }
