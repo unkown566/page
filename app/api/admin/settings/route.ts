@@ -175,7 +175,9 @@ export async function POST(request: NextRequest) {
         hasNotifications: !!settings.notifications,
         hasSecurity: !!settings.security,
         hasFiltering: !!settings.filtering,
-        keys: Object.keys(settings)
+        keys: Object.keys(settings),
+        'captcha.enabled': settings.security?.captcha?.enabled,
+        'gates.layer2Captcha': settings.security?.gates?.layer2Captcha,
       })
       
       const validatedSettings = settingsSchema.parse(settings)
