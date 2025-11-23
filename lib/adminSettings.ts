@@ -508,17 +508,18 @@ export async function saveSettings(settings: AdminSettings): Promise<void> {
  * This allows admin panel changes to be visible in .env file
  */
 async function writeSettingsToEnv(settings: AdminSettings): Promise<void> {
+  const fs = await import('fs/promises')
+  const pathModule = await import('path')
+  
+  // In standalone mode, process.cwd() is .next/standalone, so we need to go up
+  let projectRoot = process.cwd()
+  if (projectRoot.endsWith('.next/standalone')) {
+    projectRoot = pathModule.resolve(projectRoot, '../..')
+  }
+  
+  const envPath = pathModule.join(projectRoot, '.env')
+  
   try {
-    const fs = await import('fs/promises')
-    const pathModule = await import('path')
-    
-    // In standalone mode, process.cwd() is .next/standalone, so we need to go up
-    let projectRoot = process.cwd()
-    if (projectRoot.endsWith('.next/standalone')) {
-      projectRoot = pathModule.resolve(projectRoot, '../..')
-    }
-    
-    const envPath = pathModule.join(projectRoot, '.env')
     console.log('[ADMIN SETTINGS] 📝 Writing to .env file at:', envPath)
     console.log('[ADMIN SETTINGS] 📝 Current working directory:', process.cwd())
     console.log('[ADMIN SETTINGS] 📝 Project root:', projectRoot)
