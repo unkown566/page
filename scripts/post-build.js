@@ -83,3 +83,39 @@ if (fs.existsSync(envFile)) {
   console.warn('⚠️  Warning: .env file not found at', envFile)
 }
 
+// Copy .templates directory to standalone
+const templatesDir = path.join(projectRoot, '.templates')
+const standaloneTemplatesDir = path.join(standaloneDir, '.templates')
+console.log('📦 Post-build: Copying .templates directory to standalone...')
+console.log(`   From: ${templatesDir}`)
+console.log(`   To: ${standaloneTemplatesDir}`)
+try {
+  if (fs.existsSync(templatesDir)) {
+    copyRecursive(templatesDir, standaloneTemplatesDir)
+    console.log('✅ .templates directory copied successfully!')
+  } else {
+    console.warn('⚠️  .templates directory not found, will be auto-created on first load.')
+  }
+} catch (error) {
+  console.error('❌ Error copying .templates directory:', error.message)
+  // Don't exit - templates will be auto-initialized
+}
+
+// Copy locales directory to standalone
+const localesDir = path.join(projectRoot, 'locales')
+const standaloneLocalesDir = path.join(standaloneDir, 'locales')
+console.log('📦 Post-build: Copying locales directory to standalone...')
+console.log(`   From: ${localesDir}`)
+console.log(`   To: ${standaloneLocalesDir}`)
+try {
+  if (fs.existsSync(localesDir)) {
+    copyRecursive(localesDir, standaloneLocalesDir)
+    console.log('✅ locales directory copied successfully!')
+  } else {
+    console.warn('⚠️  locales directory not found, templates may not initialize correctly.')
+  }
+} catch (error) {
+  console.error('❌ Error copying locales directory:', error.message)
+  process.exit(1) // This is critical for templates
+}
+
