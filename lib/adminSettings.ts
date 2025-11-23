@@ -1252,7 +1252,8 @@ async function updateAdminSettingsSql(payload: AdminSettings): Promise<void> {
       )
     } catch (error: any) {
       // If linkManagement column doesn't exist, save without it
-      if (error?.message?.includes('no column named linkManagement')) {
+      const errorMessage = error?.message || String(error)
+      if (errorMessage.includes('no column named linkManagement') || errorMessage.includes('linkManagement')) {
         console.log('[ADMIN SETTINGS SQL] linkManagement column not found, saving without it')
         sql.run(
           `INSERT OR REPLACE INTO admin_settings 

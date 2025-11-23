@@ -17,11 +17,20 @@ export async function GET(request: NextRequest) {
       // Force re-initialization by deleting the file and reloading
       const { default: fs } = await import('fs/promises')
       const pathModule = await import('path')
-      const templatesFile = pathModule.join(process.cwd(), '.templates', 'templates.json')
+      
+      // Resolve project root correctly (handles standalone mode)
+      let projectRoot = process.cwd()
+      if (projectRoot.endsWith('.next/standalone')) {
+        projectRoot = pathModule.resolve(projectRoot, '../..')
+      }
+      
+      const templatesFile = pathModule.join(projectRoot, '.templates', 'templates.json')
       try {
         await fs.unlink(templatesFile)
+        console.log('[TEMPLATES API] Deleted templates file, reloading...')
       } catch {
         // File doesn't exist, that's fine
+        console.log('[TEMPLATES API] Templates file not found, will be created by loadTemplates')
       }
       templates = await loadTemplates()
     }
