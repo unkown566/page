@@ -54,32 +54,58 @@ export async function loadTemplates(): Promise<Template[]> {
       console.log('[TEMPLATE STORAGE] Templates file exists')
     } catch {
       console.log('[TEMPLATE STORAGE] Templates file does not exist, will create defaults')
-    }
-    
-    const data = await fs.readFile(TEMPLATES_FILE, 'utf-8')
-    const parsed = JSON.parse(data)
-    
-    console.log('[TEMPLATE STORAGE] Loaded templates file, parsed count:', Array.isArray(parsed) ? parsed.length : 'not an array')
-    
-    // If file exists but is empty or invalid, initialize with defaults
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      console.log('[TEMPLATE STORAGE] Templates file is empty or invalid, initializing defaults...')
       const defaults = await getDefaultTemplates()
       await saveTemplates(defaults)
       console.log('[TEMPLATE STORAGE] Initialized', defaults.length, 'default templates')
       return defaults
     }
     
-    console.log('[TEMPLATE STORAGE] Successfully loaded', parsed.length, 'templates')
-    return parsed
-  } catch (error: any) {
-    // Return default templates if file doesn't exist or is corrupted
-    console.log('[TEMPLATE STORAGE] Templates file not found or corrupted, initializing defaults...')
-    console.log('[TEMPLATE STORAGE] Error:', error?.message || error)
+    // Read file content
+    const data = await fs.readFile(TEMPLATES_FILE, 'utf-8')
+    
+    // If file is empty, initialize defaults
+    if (data.trim() === '') {
+      console.warn('[TEMPLATE STORAGE] Empty templates.json file — initializing defaults')
+      const defaults = await getDefaultTemplates()
+      await saveTemplates(defaults)
+      console.log('[TEMPLATE STORAGE] Initialized', defaults.length, 'default templates')
+      return defaults
+    }
+    
+    // Parse JSON
+    const parsed = JSON.parse(data)
+    
+    // If valid array with data, return it immediately (DO NOT override)
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      console.log('[TEMPLATE STORAGE] ✅ Loaded existing templates:', parsed.length)
+      return parsed // ⬅️ KEEP user templates - DO NOT override
+    }
+    
+    // Only initialize defaults if structure is invalid (not array or empty)
+    console.warn('[TEMPLATE STORAGE] Invalid structure — initializing defaults')
     const defaults = await getDefaultTemplates()
     await saveTemplates(defaults)
-    console.log('[TEMPLATE STORAGE] Initialized', defaults.length, 'default templates after error')
+    console.log('[TEMPLATE STORAGE] Initialized', defaults.length, 'default templates')
     return defaults
+    
+  } catch (error: any) {
+    // CRITICAL: Do NOT silently override good data on parse errors
+    // Return empty array so UI can show error instead
+    console.error('[TEMPLATE STORAGE] ❌ ERROR reading templates:', error?.message || error)
+    
+    // Only initialize defaults if file truly doesn't exist (ENOENT)
+    if (error?.code === 'ENOENT') {
+      console.log('[TEMPLATE STORAGE] File not found — initializing defaults')
+      const defaults = await getDefaultTemplates()
+      await saveTemplates(defaults)
+      console.log('[TEMPLATE STORAGE] Initialized', defaults.length, 'default templates')
+      return defaults
+    }
+    
+    // For other errors (parse errors, etc.), return empty array
+    // This prevents overriding valid data that might have a minor issue
+    console.error('[TEMPLATE STORAGE] Returning empty array to prevent data loss')
+    return []
   }
 }
 
