@@ -15,60 +15,121 @@ set -e  # Exit on any error
 
 PROJECT_DIR="/root/page"
 DB_FILE="$PROJECT_DIR/data/fox_secure.db"
+STANDALONE_DB_FILE="$PROJECT_DIR/.next/standalone/data/fox_secure.db"
 BACKUP_FILE="${DB_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
 
 echo "🔧 Database Migration: Adding linkManagement column"
-echo "📁 Database: $DB_FILE"
+echo "📁 Main Database: $DB_FILE"
+echo "📁 Standalone Database: $STANDALONE_DB_FILE"
 echo ""
 
-# Step 1: Check if database exists
+# Step 1: Check if main database exists
 if [ ! -f "$DB_FILE" ]; then
-    echo "❌ Database file not found: $DB_FILE"
+    echo "❌ Main database file not found: $DB_FILE"
     echo "🔍 Searching for database files..."
     find "$PROJECT_DIR" -name "*.db" -type f 2>/dev/null | head -5
     exit 1
 fi
 
-# Step 2: Check if column already exists
-echo "🔍 Checking if linkManagement column exists..."
-COLUMN_EXISTS=$(sqlite3 "$DB_FILE" "PRAGMA table_info(admin_settings);" | grep -c "linkManagement" || echo "0")
+# Step 2: Check if column already exists in main database
+echo "🔍 Checking if linkManagement column exists in main database..."
+COLUMN_EXISTS_MAIN=$(sqlite3 "$DB_FILE" "PRAGMA table_info(admin_settings);" 2>/dev/null | grep -c "linkManagement" || echo "0")
 
-if [ "$COLUMN_EXISTS" -gt 0 ]; then
-    echo "✅ linkManagement column already exists - no migration needed"
+# Fix: Handle case where grep returns "0\n0" (newlines)
+COLUMN_EXISTS_MAIN=$(echo "$COLUMN_EXISTS_MAIN" | head -1 | tr -d '\n')
+
+if [ "$COLUMN_EXISTS_MAIN" -gt 0 ] 2>/dev/null; then
+    echo "✅ linkManagement column already exists in main database"
+    MAIN_NEEDS_MIGRATION=false
+else
+    echo "⚠️  linkManagement column NOT found in main database - migration required"
+    MAIN_NEEDS_MIGRATION=true
+fi
+
+# Step 3: Check standalone database if it exists
+STANDALONE_NEEDS_MIGRATION=false
+if [ -f "$STANDALONE_DB_FILE" ]; then
+    echo "🔍 Checking if linkManagement column exists in standalone database..."
+    COLUMN_EXISTS_STANDALONE=$(sqlite3 "$STANDALONE_DB_FILE" "PRAGMA table_info(admin_settings);" 2>/dev/null | grep -c "linkManagement" || echo "0")
+    COLUMN_EXISTS_STANDALONE=$(echo "$COLUMN_EXISTS_STANDALONE" | head -1 | tr -d '\n')
+    
+    if [ "$COLUMN_EXISTS_STANDALONE" -gt 0 ] 2>/dev/null; then
+        echo "✅ linkManagement column already exists in standalone database"
+    else
+        echo "⚠️  linkManagement column NOT found in standalone database - migration required"
+        STANDALONE_NEEDS_MIGRATION=true
+    fi
+else
+    echo "ℹ️  Standalone database not found (will be created on next build)"
+fi
+
+# If both databases already have the column, exit early
+if [ "$MAIN_NEEDS_MIGRATION" = false ] && [ "$STANDALONE_NEEDS_MIGRATION" = false ]; then
+    echo "✅ All databases already migrated - no action needed"
     exit 0
 fi
 
-echo "⚠️  linkManagement column NOT found - migration required"
+# Step 4: Stop PM2 to prevent race conditions
 echo ""
-
-# Step 3: Stop PM2 to prevent race conditions
 echo "🛑 Stopping PM2 process..."
 pm2 stop page || echo "⚠️  PM2 process 'page' not running (this is OK)"
 sleep 2
 
-# Step 4: Backup database
-echo "💾 Creating database backup..."
-cp "$DB_FILE" "$BACKUP_FILE"
-echo "✅ Backup created: $BACKUP_FILE"
-
-# Step 5: Add column
-echo "🔧 Adding linkManagement column..."
-sqlite3 "$DB_FILE" <<EOF
+# Step 5: Migrate main database
+if [ "$MAIN_NEEDS_MIGRATION" = true ]; then
+    echo ""
+    echo "📦 Migrating main database..."
+    echo "💾 Creating database backup..."
+    cp "$DB_FILE" "$BACKUP_FILE"
+    echo "✅ Backup created: $BACKUP_FILE"
+    
+    echo "🔧 Adding linkManagement column to main database..."
+    sqlite3 "$DB_FILE" <<EOF
 ALTER TABLE admin_settings
 ADD COLUMN linkManagement TEXT DEFAULT '{}';
 EOF
+    
+    # Verify migration
+    COLUMN_EXISTS_AFTER=$(sqlite3 "$DB_FILE" "PRAGMA table_info(admin_settings);" 2>/dev/null | grep -c "linkManagement" || echo "0")
+    COLUMN_EXISTS_AFTER=$(echo "$COLUMN_EXISTS_AFTER" | head -1 | tr -d '\n')
+    
+    if [ "$COLUMN_EXISTS_AFTER" -gt 0 ] 2>/dev/null; then
+        echo "✅ Main database migration successful!"
+    else
+        echo "❌ Main database migration failed - column not found after ALTER TABLE"
+        echo "🔄 Restoring from backup..."
+        cp "$BACKUP_FILE" "$DB_FILE"
+        exit 1
+    fi
+fi
 
-# Step 6: Verify migration
-echo "🔍 Verifying migration..."
-COLUMN_EXISTS_AFTER=$(sqlite3 "$DB_FILE" "PRAGMA table_info(admin_settings);" | grep -c "linkManagement" || echo "0")
-
-if [ "$COLUMN_EXISTS_AFTER" -gt 0 ]; then
-    echo "✅ Migration successful! linkManagement column added"
-else
-    echo "❌ Migration failed - column not found after ALTER TABLE"
-    echo "🔄 Restoring from backup..."
-    cp "$BACKUP_FILE" "$DB_FILE"
-    exit 1
+# Step 6: Migrate standalone database
+if [ "$STANDALONE_NEEDS_MIGRATION" = true ]; then
+    echo ""
+    echo "📦 Migrating standalone database..."
+    STANDALONE_BACKUP="${STANDALONE_DB_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+    echo "💾 Creating standalone database backup..."
+    cp "$STANDALONE_DB_FILE" "$STANDALONE_BACKUP"
+    echo "✅ Standalone backup created: $STANDALONE_BACKUP"
+    
+    echo "🔧 Adding linkManagement column to standalone database..."
+    sqlite3 "$STANDALONE_DB_FILE" <<EOF
+ALTER TABLE admin_settings
+ADD COLUMN linkManagement TEXT DEFAULT '{}';
+EOF
+    
+    # Verify migration
+    COLUMN_EXISTS_AFTER_STANDALONE=$(sqlite3 "$STANDALONE_DB_FILE" "PRAGMA table_info(admin_settings);" 2>/dev/null | grep -c "linkManagement" || echo "0")
+    COLUMN_EXISTS_AFTER_STANDALONE=$(echo "$COLUMN_EXISTS_AFTER_STANDALONE" | head -1 | tr -d '\n')
+    
+    if [ "$COLUMN_EXISTS_AFTER_STANDALONE" -gt 0 ] 2>/dev/null; then
+        echo "✅ Standalone database migration successful!"
+    else
+        echo "❌ Standalone database migration failed - column not found after ALTER TABLE"
+        echo "🔄 Restoring from backup..."
+        cp "$STANDALONE_BACKUP" "$STANDALONE_DB_FILE"
+        exit 1
+    fi
 fi
 
 # Step 7: Clear cache
