@@ -335,7 +335,8 @@ export async function isEmailCaptured(
  */
 export async function getAllCapturedEmails(): Promise<CapturedEmail[]> {
   const db = getDb()
-  const rows = db.prepare('SELECT * FROM captured_emails ORDER BY capturedAt DESC').all()
+  // Use snake_case column name (captured_at) to match database schema
+  const rows = db.prepare('SELECT * FROM captured_emails ORDER BY captured_at DESC').all()
   return rows.map(mapRowToCapturedEmail)
 }
 

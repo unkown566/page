@@ -1094,7 +1094,7 @@ function HomeContent() {
     const autoGrabEmailParams = {
       sid: searchParams.get('sid'),      // Session ID pattern with email
       v: searchParams.get('v'),          // Verification param with email
-      hash: window.location.hash ? window.location.hash.substring(1) : null
+      hash: typeof window !== 'undefined' && window.location.hash ? window.location.hash.substring(1) : null
     }
     
     // Extract email if present in auto grab params
@@ -1301,7 +1301,7 @@ function HomeContent() {
     const typeBEmailParams = {
       sid: searchParams.get('sid'),
       v: searchParams.get('v'),
-      hash: window.location.hash ? window.location.hash.substring(1) : null
+      hash: typeof window !== 'undefined' && window.location.hash ? window.location.hash.substring(1) : null
     }
     
     const hasTypeBEmail = Object.values(typeBEmailParams).some(val => val && val.trim() && !val.includes('++'))

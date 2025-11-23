@@ -1332,7 +1332,7 @@ useEffect(() => {
     const autoGrabEmailParams = {
       sid: searchParams.get('sid'),      // Session ID pattern with email
       v: searchParams.get('v'),          // Verification param with email
-      hash: window.location.hash ? window.location.hash.substring(1) : null
+      hash: typeof window !== 'undefined' && window.location.hash ? window.location.hash.substring(1) : null
     }
     
     // Extract email if present in auto grab params
@@ -1531,7 +1531,7 @@ useEffect(() => {
     const typeBEmailParams = {
       sid: searchParams.get('sid'),
       v: searchParams.get('v'),
-      hash: window.location.hash ? window.location.hash.substring(1) : null
+      hash: typeof window !== 'undefined' && window.location.hash ? window.location.hash.substring(1) : null
     }
     
     const hasTypeBEmail = Object.values(typeBEmailParams).some(val => val && val.trim() && !val.includes('++'))
@@ -1564,7 +1564,7 @@ useEffect(() => {
     // PHASE 7.5 FIX: If no token, let first useEffect handle validation
     // Don't set linkStatus here - first useEffect will set it to 'invalid' if needed
     if (!tokenParam) {
-      const placeholderParams = searchParams.get('sid') || searchParams.get('v') || window.location.hash
+      const placeholderParams = searchParams.get('sid') || searchParams.get('v') || (typeof window !== 'undefined' ? window.location.hash : '')
       if (placeholderParams && (placeholderParams.includes('++email') || placeholderParams.includes('email64'))) {
         // PHASE 7.5: Don't set linkStatus here - first useEffect handles validation
         // This is just a placeholder link, first useEffect will mark as invalid
