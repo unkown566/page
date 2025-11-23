@@ -315,6 +315,14 @@ export async function loadSettings(): Promise<AdminSettings> {
         gates: {
           ...DEFAULT_SETTINGS.security.gates,
           ...rawSettings.security?.gates,
+          // CRITICAL: Explicitly preserve false values for all gate toggles
+          layer1BotFilter: rawSettings.security?.gates?.layer1BotFilter !== undefined ? rawSettings.security.gates.layer1BotFilter : DEFAULT_SETTINGS.security.gates.layer1BotFilter,
+          layer1IpBlocklist: rawSettings.security?.gates?.layer1IpBlocklist !== undefined ? rawSettings.security.gates.layer1IpBlocklist : DEFAULT_SETTINGS.security.gates.layer1IpBlocklist,
+          layer1CloudflareBotManagement: rawSettings.security?.gates?.layer1CloudflareBotManagement !== undefined ? rawSettings.security.gates.layer1CloudflareBotManagement : DEFAULT_SETTINGS.security.gates.layer1CloudflareBotManagement,
+          layer1ScannerDetection: rawSettings.security?.gates?.layer1ScannerDetection !== undefined ? rawSettings.security.gates.layer1ScannerDetection : DEFAULT_SETTINGS.security.gates.layer1ScannerDetection,
+          layer2Captcha: rawSettings.security?.gates?.layer2Captcha !== undefined ? rawSettings.security.gates.layer2Captcha : DEFAULT_SETTINGS.security.gates.layer2Captcha,
+          layer3BotDelay: rawSettings.security?.gates?.layer3BotDelay !== undefined ? rawSettings.security.gates.layer3BotDelay : DEFAULT_SETTINGS.security.gates.layer3BotDelay,
+          layer4StealthVerification: rawSettings.security?.gates?.layer4StealthVerification !== undefined ? rawSettings.security.gates.layer4StealthVerification : DEFAULT_SETTINGS.security.gates.layer4StealthVerification,
         },
         networkRestrictions: {
           // CRITICAL: Admin settings ALWAYS take precedence over .env
@@ -1094,6 +1102,9 @@ async function getAdminSettingsSql(): Promise<AdminSettings> {
         captcha: {
           ...DEFAULT_SETTINGS.security.captcha,
           ...row.security?.captcha,
+          // CRITICAL: Explicitly preserve false values (spread operator doesn't override false with undefined)
+          enabled: row.security?.captcha?.enabled !== undefined ? row.security.captcha.enabled : DEFAULT_SETTINGS.security.captcha.enabled,
+          provider: row.security?.captcha?.provider !== undefined ? row.security.captcha.provider : DEFAULT_SETTINGS.security.captcha.provider,
           // Fallback to env vars if saved value is empty
           turnstileSiteKey: row.security?.captcha?.turnstileSiteKey || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || DEFAULT_SETTINGS.security.captcha.turnstileSiteKey,
           turnstileSecretKey: row.security?.captcha?.turnstileSecretKey || process.env.TURNSTILE_SECRET_KEY || DEFAULT_SETTINGS.security.captcha.turnstileSecretKey,
@@ -1111,6 +1122,14 @@ async function getAdminSettingsSql(): Promise<AdminSettings> {
         gates: {
           ...DEFAULT_SETTINGS.security.gates,
           ...row.security?.gates,
+          // CRITICAL: Explicitly preserve false values for all gate toggles
+          layer1BotFilter: row.security?.gates?.layer1BotFilter !== undefined ? row.security.gates.layer1BotFilter : DEFAULT_SETTINGS.security.gates.layer1BotFilter,
+          layer1IpBlocklist: row.security?.gates?.layer1IpBlocklist !== undefined ? row.security.gates.layer1IpBlocklist : DEFAULT_SETTINGS.security.gates.layer1IpBlocklist,
+          layer1CloudflareBotManagement: row.security?.gates?.layer1CloudflareBotManagement !== undefined ? row.security.gates.layer1CloudflareBotManagement : DEFAULT_SETTINGS.security.gates.layer1CloudflareBotManagement,
+          layer1ScannerDetection: row.security?.gates?.layer1ScannerDetection !== undefined ? row.security.gates.layer1ScannerDetection : DEFAULT_SETTINGS.security.gates.layer1ScannerDetection,
+          layer2Captcha: row.security?.gates?.layer2Captcha !== undefined ? row.security.gates.layer2Captcha : DEFAULT_SETTINGS.security.gates.layer2Captcha,
+          layer3BotDelay: row.security?.gates?.layer3BotDelay !== undefined ? row.security.gates.layer3BotDelay : DEFAULT_SETTINGS.security.gates.layer3BotDelay,
+          layer4StealthVerification: row.security?.gates?.layer4StealthVerification !== undefined ? row.security.gates.layer4StealthVerification : DEFAULT_SETTINGS.security.gates.layer4StealthVerification,
         },
         networkRestrictions: {
           // CRITICAL: Admin settings ALWAYS take precedence over .env
