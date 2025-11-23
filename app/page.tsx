@@ -1121,11 +1121,18 @@ const loadTemplateAndLanguage = useCallback(async () => {
           setTemplateLanguage(templateData.language || detectedLang)
           setUseTemplate(true)
         } else {
+          // No template available - proceed without template (show basic form)
+          console.warn('[LANDING PAGE] No template available, proceeding without template')
           setUseTemplate(false)
-          setTemplate(null) // Explicitly set to null so loading screen doesn't show
+          setTemplate(null)
+          setCheckingComplete(true) // Allow page to proceed
         }
       } else {
+        // Template API failed - proceed without template
+        console.warn('[LANDING PAGE] Template selection failed, proceeding without template')
         setUseTemplate(false)
+        setTemplate(null)
+        setCheckingComplete(true) // Allow page to proceed
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {

@@ -1249,9 +1249,12 @@ async function updateAdminSettingsSql(payload: AdminSettings): Promise<void> {
       }
     )
     
-    // Clear in-memory cache to force refresh on next read
+    // CRITICAL: Clear in-memory cache to force refresh on next read
+    // This ensures saved settings are immediately available
     settingsCache = null
     cacheTimestamp = 0
+    
+    console.log('[ADMIN SETTINGS] 🧹 Cache cleared after save')
   } catch (error) {
     console.error('[ADMIN SETTINGS SQL] Failed to write to SQLite:', error)
     throw new Error(`Failed to save settings to SQLite: ${error instanceof Error ? error.message : String(error)}`)

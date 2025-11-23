@@ -195,6 +195,10 @@ export default function SettingsPage() {
 
       const data = await response.json()
       if (data.success) {
+        // CRITICAL: Wait a moment for cache to clear, then reload settings
+        // This ensures we get the fresh saved values, not cached defaults
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
         // Reload settings from server to confirm
         await fetchSettings()
         
