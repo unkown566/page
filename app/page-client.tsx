@@ -874,11 +874,14 @@ function HomeContent() {
     // Only load if we have email and checking is complete (after bot delay)
     if (!email || !checkingComplete) {
       // ADD THIS: If waiting too long, force load anyway
-      const waitingTime = Date.now() - pageLoadTime
-      if (waitingTime > 20000) {  // 20 seconds
-        setCheckingComplete(true)
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('checking_complete', 'true')
+      // Fix: pageLoadTime can be null, so use fallback
+      if (pageLoadTime !== null) {
+        const waitingTime = Date.now() - pageLoadTime
+        if (waitingTime > 20000) {  // 20 seconds
+          setCheckingComplete(true)
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('checking_complete', 'true')
+          }
         }
       }
       
