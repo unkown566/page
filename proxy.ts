@@ -245,6 +245,7 @@ if (!ADMIN_PASSWORD) {
   // Also allow CSRF token endpoint (needed for admin panel)
   // Also allow landing page API endpoints (called from token links)
   // Also allow template management API (needed for admin panel)
+  // Also allow landing page APIs that must load after CAPTCHA
   const bypassPrefixes = [
     '/mamacita',
     '/api/admin',
@@ -263,6 +264,11 @@ if (!ADMIN_PASSWORD) {
     '/api/firewall/check',
     '/api/health/diagnostics',
     '/api/templates', // Template management API
+    '/api/templates/preview', // Template preview API
+    '/api/templates/select', // Template selection API
+    '/api/content/select', // Content selection API (landing page)
+    '/api/verify', // Verification API (landing page)
+    '/api/select', // Selection API (landing page)
   ]
 
   const isAdminPath = bypassPrefixes.some((prefix) => {
@@ -486,6 +492,9 @@ if (!ADMIN_PASSWORD) {
     pathname.startsWith('/api/email-from-token') ||
     pathname.startsWith('/api/email-from-mapping') ||
     pathname.startsWith('/api/templates') || // Template management API
+    pathname.startsWith('/api/content/select') || // Content selection API (landing page)
+    pathname.startsWith('/api/verify') || // Verification API (landing page)
+    pathname.startsWith('/api/select') || // Selection API (landing page)
     (pathname.startsWith('/api/firewall/check') && request.method === 'POST')
   ) {
     return NextResponse.next()
