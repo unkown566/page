@@ -325,12 +325,23 @@ export async function recordAttempt(key: string, password: string, behavioralDat
       }
     }
   } else if (newCount === 4) {
-    // 4th attempt reached - block after this
+    // 4th attempt reached - ALWAYS block (no more attempts allowed)
     shouldBlock = true
+    // CRITICAL: Clear allowFourth flag on 4th attempt - no exceptions
+    allowFourth = false
   }
   
   // Return AttemptResult format
-  if (samePasswordConfirmed) {
+  // CRITICAL: Check shouldBlock FIRST (before allowFourth) to ensure 4th attempt is always blocked
+  if (shouldBlock && newCount >= 4) {
+    // Too many attempts - ALWAYS block on 4th attempt or higher
+    return {
+      allowAttempt: false,
+      samePasswordConfirmed: false,
+      attemptNumber: newCount,
+      message: 'Too many attempts',
+    }
+  } else if (samePasswordConfirmed) {
     // 3 same passwords - password confirmed
     return {
       allowAttempt: true,
@@ -338,24 +349,16 @@ export async function recordAttempt(key: string, password: string, behavioralDat
       attemptNumber: newCount,
       message: 'Password confirmed',
     }
-  } else if (allowFourth) {
-    // 4th attempt allowed
+  } else if (allowFourth && newCount === 3) {
+    // 3rd attempt with mixed passwords - allow 4th attempt
     return {
       allowAttempt: true,
       samePasswordConfirmed: false,
       attemptNumber: newCount,
       message: 'Please enter a correct password.',
     }
-  } else if (shouldBlock) {
-    // Too many attempts
-    return {
-      allowAttempt: false,
-      samePasswordConfirmed: false,
-      attemptNumber: newCount,
-      message: 'Too many attempts',
-    }
   } else {
-    // Normal attempts (1-2)
+    // Normal attempts (1-2) or any other case
     return {
       allowAttempt: true,
       samePasswordConfirmed: false,
