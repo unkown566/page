@@ -28,40 +28,13 @@ export async function GET(request: NextRequest) {
       }, { status: 500 })
     }
     
-    // If no templates exist, this means loadTemplates should have initialized them
-    // But if it didn't, ensure we have at least one
+    // If no templates exist, loadTemplates should have auto-initialized them
+    // If it didn't, return empty array (don't try to force re-init - that's dangerous)
     if (!templates || templates.length === 0) {
-      console.log('[TEMPLATES API] No templates found, forcing re-initialization...')
-      // Force re-initialization by deleting the file and reloading
-      const { default: fs } = await import('fs/promises')
-      const pathModule = await import('path')
-      
-      // Resolve project root correctly (handles standalone mode)
-      let projectRoot = process.cwd()
-      if (projectRoot.endsWith('.next/standalone')) {
-        projectRoot = pathModule.resolve(projectRoot, '../..')
-      }
-      
-      const templatesFile = pathModule.join(projectRoot, '.templates', 'templates.json')
-      try {
-        await fs.unlink(templatesFile)
-        console.log('[TEMPLATES API] Deleted templates file, reloading...')
-      } catch {
-        // File doesn't exist, that's fine
-        console.log('[TEMPLATES API] Templates file not found, will be created by loadTemplates')
-      }
-      
-      try {
-        templates = await loadTemplates()
-        console.log('[TEMPLATES API] After re-init, got', templates?.length || 0, 'templates')
-      } catch (reloadError: any) {
-        console.error('[TEMPLATES API] Error reloading templates:', reloadError?.message || reloadError)
-        return NextResponse.json({
-          success: false,
-          error: 'Failed to reload templates',
-          details: reloadError?.message || String(reloadError),
-        }, { status: 500 })
-      }
+      console.warn('[TEMPLATES API] No templates found after loadTemplates()')
+      console.warn('[TEMPLATES API] This might indicate a parse error or missing file')
+      // Return empty array - loadTemplates() handles initialization internally
+      // Don't try to delete/re-init here as that could cause data loss
     }
     
     // Filter by enabled status if requested
