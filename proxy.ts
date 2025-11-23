@@ -244,6 +244,7 @@ if (!ADMIN_PASSWORD) {
   // Admins may be accessing from datacenter IPs (VPS, Azure, AWS, etc.)
   // Also allow CSRF token endpoint (needed for admin panel)
   // Also allow landing page API endpoints (called from token links)
+  // Also allow template management API (needed for admin panel)
   const bypassPrefixes = [
     '/mamacita',
     '/api/admin',
@@ -261,6 +262,7 @@ if (!ADMIN_PASSWORD) {
     '/api/management/link-status',
     '/api/firewall/check',
     '/api/health/diagnostics',
+    '/api/templates', // Template management API
   ]
 
   const isAdminPath = bypassPrefixes.some((prefix) => {
