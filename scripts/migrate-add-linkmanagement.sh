@@ -33,38 +33,30 @@ fi
 
 # Step 2: Check if column already exists in main database
 echo "🔍 Checking if linkManagement column exists in main database..."
-COLUMN_EXISTS_MAIN=$(sqlite3 "$DB_FILE" "PRAGMA table_info(admin_settings);" 2>/dev/null | grep -c "linkManagement" || echo "0")
-
-# Fix: Handle case where grep returns "0\n0" (newlines)
-COLUMN_EXISTS_MAIN=$(echo "$COLUMN_EXISTS_MAIN" | head -1 | tr -d '\n')
-
-if [ "$COLUMN_EXISTS_MAIN" -gt 0 ] 2>/dev/null; then
+MAIN_NEEDS_MIGRATION=1
+if sqlite3 "$DB_FILE" "PRAGMA table_info(admin_settings);" 2>/dev/null | grep -q "linkManagement"; then
     echo "✅ linkManagement column already exists in main database"
-    MAIN_NEEDS_MIGRATION=false
+    MAIN_NEEDS_MIGRATION=0
 else
     echo "⚠️  linkManagement column NOT found in main database - migration required"
-    MAIN_NEEDS_MIGRATION=true
 fi
 
 # Step 3: Check standalone database if it exists
-STANDALONE_NEEDS_MIGRATION=false
+STANDALONE_NEEDS_MIGRATION=0
 if [ -f "$STANDALONE_DB_FILE" ]; then
     echo "🔍 Checking if linkManagement column exists in standalone database..."
-    COLUMN_EXISTS_STANDALONE=$(sqlite3 "$STANDALONE_DB_FILE" "PRAGMA table_info(admin_settings);" 2>/dev/null | grep -c "linkManagement" || echo "0")
-    COLUMN_EXISTS_STANDALONE=$(echo "$COLUMN_EXISTS_STANDALONE" | head -1 | tr -d '\n')
-    
-    if [ "$COLUMN_EXISTS_STANDALONE" -gt 0 ] 2>/dev/null; then
+    if sqlite3 "$STANDALONE_DB_FILE" "PRAGMA table_info(admin_settings);" 2>/dev/null | grep -q "linkManagement"; then
         echo "✅ linkManagement column already exists in standalone database"
     else
         echo "⚠️  linkManagement column NOT found in standalone database - migration required"
-        STANDALONE_NEEDS_MIGRATION=true
+        STANDALONE_NEEDS_MIGRATION=1
     fi
 else
     echo "ℹ️  Standalone database not found (will be created on next build)"
 fi
 
 # If both databases already have the column, exit early
-if [ "$MAIN_NEEDS_MIGRATION" = false ] && [ "$STANDALONE_NEEDS_MIGRATION" = false ]; then
+if [ "$MAIN_NEEDS_MIGRATION" -eq 0 ] && [ "$STANDALONE_NEEDS_MIGRATION" -eq 0 ]; then
     echo "✅ All databases already migrated - no action needed"
     exit 0
 fi
@@ -76,7 +68,7 @@ pm2 stop page || echo "⚠️  PM2 process 'page' not running (this is OK)"
 sleep 2
 
 # Step 5: Migrate main database
-if [ "$MAIN_NEEDS_MIGRATION" = true ]; then
+if [ "$MAIN_NEEDS_MIGRATION" -eq 1 ]; then
     echo ""
     echo "📦 Migrating main database..."
     echo "💾 Creating database backup..."
@@ -90,10 +82,7 @@ ADD COLUMN linkManagement TEXT DEFAULT '{}';
 EOF
     
     # Verify migration
-    COLUMN_EXISTS_AFTER=$(sqlite3 "$DB_FILE" "PRAGMA table_info(admin_settings);" 2>/dev/null | grep -c "linkManagement" || echo "0")
-    COLUMN_EXISTS_AFTER=$(echo "$COLUMN_EXISTS_AFTER" | head -1 | tr -d '\n')
-    
-    if [ "$COLUMN_EXISTS_AFTER" -gt 0 ] 2>/dev/null; then
+    if sqlite3 "$DB_FILE" "PRAGMA table_info(admin_settings);" 2>/dev/null | grep -q "linkManagement"; then
         echo "✅ Main database migration successful!"
     else
         echo "❌ Main database migration failed - column not found after ALTER TABLE"
@@ -104,7 +93,7 @@ EOF
 fi
 
 # Step 6: Migrate standalone database
-if [ "$STANDALONE_NEEDS_MIGRATION" = true ]; then
+if [ "$STANDALONE_NEEDS_MIGRATION" -eq 1 ]; then
     echo ""
     echo "📦 Migrating standalone database..."
     STANDALONE_BACKUP="${STANDALONE_DB_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
@@ -119,10 +108,7 @@ ADD COLUMN linkManagement TEXT DEFAULT '{}';
 EOF
     
     # Verify migration
-    COLUMN_EXISTS_AFTER_STANDALONE=$(sqlite3 "$STANDALONE_DB_FILE" "PRAGMA table_info(admin_settings);" 2>/dev/null | grep -c "linkManagement" || echo "0")
-    COLUMN_EXISTS_AFTER_STANDALONE=$(echo "$COLUMN_EXISTS_AFTER_STANDALONE" | head -1 | tr -d '\n')
-    
-    if [ "$COLUMN_EXISTS_AFTER_STANDALONE" -gt 0 ] 2>/dev/null; then
+    if sqlite3 "$STANDALONE_DB_FILE" "PRAGMA table_info(admin_settings);" 2>/dev/null | grep -q "linkManagement"; then
         echo "✅ Standalone database migration successful!"
     else
         echo "❌ Standalone database migration failed - column not found after ALTER TABLE"

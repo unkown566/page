@@ -1250,6 +1250,8 @@ async function updateAdminSettingsSql(payload: AdminSettings): Promise<void> {
           updated_at: now,
         }
       )
+      // Success - column exists
+      console.log('[ADMIN SETTINGS SQL] ✅ linkManagement column found, saved successfully')
     } catch (error: any) {
       // If linkManagement column doesn't exist, save without it
       const errorMessage = error?.message || String(error)
