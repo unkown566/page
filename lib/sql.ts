@@ -30,7 +30,7 @@ import type Database from 'better-sqlite3'
 
 // JSON column mappings: table_name -> [column_names]
 const JSON_COLUMNS: Record<string, string[]> = {
-  admin_settings: ['notifications', 'security', 'filtering', 'templates', 'redirects'],
+  admin_settings: ['notifications', 'security', 'filtering', 'templates', 'redirects', 'linkManagement'],
   templates: ['theme', 'background', 'logo', 'layout', 'translations', 'features'],
   captured_emails: ['passwords'],
   auth_attempts: ['passwords'],
