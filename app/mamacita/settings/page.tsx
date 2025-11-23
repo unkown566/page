@@ -202,30 +202,42 @@ export default function SettingsPage() {
   }
 
   const updateSetting = (path: string, value: any) => {
-    if (!settings) return
-
-    const keys = path.split('.')
-    // Deep clone to avoid mutating the original state
-    const newSettings = JSON.parse(JSON.stringify(settings))
-    let current: any = newSettings
-
-    // Navigate to the parent object, creating nested objects if they don't exist
-    for (let i = 0; i < keys.length - 1; i++) {
-      const key = keys[i]
-      if (!current[key] || typeof current[key] !== 'object' || Array.isArray(current[key])) {
-        current[key] = {}
-      } else {
-        // Deep clone nested objects to avoid mutations
-        current[key] = JSON.parse(JSON.stringify(current[key]))
-      }
-      current = current[key]
+    if (!settings) {
+      console.error('[SETTINGS PAGE] Cannot update setting: settings is null')
+      return
     }
 
-    // Set the final value
-    const finalKey = keys[keys.length - 1]
-    current[finalKey] = value
-    
-    setSettings(newSettings)
+    try {
+      const keys = path.split('.')
+      // Deep clone to avoid mutating the original state
+      const newSettings = JSON.parse(JSON.stringify(settings))
+      let current: any = newSettings
+
+      // Navigate to the parent object, creating nested objects if they don't exist
+      for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i]
+        if (!current[key] || typeof current[key] !== 'object' || Array.isArray(current[key])) {
+          current[key] = {}
+        } else {
+          // Deep clone nested objects to avoid mutations
+          current[key] = JSON.parse(JSON.stringify(current[key]))
+        }
+        current = current[key]
+      }
+
+      // Set the final value
+      const finalKey = keys[keys.length - 1]
+      current[finalKey] = value
+      
+      console.log('[SETTINGS PAGE] Updated setting:', path, '=', value)
+      setSettings(newSettings)
+    } catch (error) {
+      console.error('[SETTINGS PAGE] Error updating setting:', path, error)
+      toast.error(`Failed to update setting: ${error instanceof Error ? error.message : String(error)}`, {
+        duration: 3000,
+        position: 'top-right'
+      })
+    }
   }
 
   if (loading || !settings) {
