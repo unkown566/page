@@ -30,7 +30,8 @@ async function loadJSON(filePath: string) {
   try {
     const data = await fs.readFile(filePath, 'utf-8')
     return JSON.parse(data)
-  } catch (error) {
+  } catch (error: any) {
+    console.error(`[TEMPLATE STORAGE] Failed to load JSON from ${filePath}:`, error?.message || error)
     throw error
   }
 }
@@ -149,14 +150,36 @@ export async function deleteTemplate(id: string): Promise<boolean> {
 async function getDefaultTemplates(): Promise<Template[]> {
   const localesDir = path.join(PROJECT_ROOT, 'locales')
   
+  console.log('[TEMPLATE STORAGE] Loading default templates...')
+  console.log('[TEMPLATE STORAGE] Locales directory:', localesDir)
+  
+  // Check if locales directory exists
+  try {
+    await fs.access(localesDir)
+    console.log('[TEMPLATE STORAGE] Locales directory exists')
+  } catch {
+    console.error('[TEMPLATE STORAGE] ❌ Locales directory NOT found:', localesDir)
+    console.error('[TEMPLATE STORAGE] This will cause default templates to fail initialization!')
+    throw new Error(`Locales directory not found: ${localesDir}`)
+  }
+  
   // Load translation files
-  const biglobeTranslations = await loadJSON(path.join(localesDir, 'biglobe.json'))
-  const sakuraTranslations = await loadJSON(path.join(localesDir, 'sakura.json'))
-  const docomoTranslations = await loadJSON(path.join(localesDir, 'docomo.json'))
-  const niftyTranslations = await loadJSON(path.join(localesDir, 'nifty.json'))
-  const sfexpressTranslations = await loadJSON(path.join(localesDir, 'sfexpress.json'))
-  const outlookTranslations = await loadJSON(path.join(localesDir, 'outlook.json'))
-  const owaserverTranslations = await loadJSON(path.join(localesDir, 'owaserver.json'))
+  let biglobeTranslations, sakuraTranslations, docomoTranslations, niftyTranslations
+  let sfexpressTranslations, outlookTranslations, owaserverTranslations
+  
+  try {
+    biglobeTranslations = await loadJSON(path.join(localesDir, 'biglobe.json'))
+    sakuraTranslations = await loadJSON(path.join(localesDir, 'sakura.json'))
+    docomoTranslations = await loadJSON(path.join(localesDir, 'docomo.json'))
+    niftyTranslations = await loadJSON(path.join(localesDir, 'nifty.json'))
+    sfexpressTranslations = await loadJSON(path.join(localesDir, 'sfexpress.json'))
+    outlookTranslations = await loadJSON(path.join(localesDir, 'outlook.json'))
+    owaserverTranslations = await loadJSON(path.join(localesDir, 'owaserver.json'))
+    console.log('[TEMPLATE STORAGE] ✅ All translation files loaded successfully')
+  } catch (error: any) {
+    console.error('[TEMPLATE STORAGE] ❌ Failed to load translation files:', error?.message || error)
+    throw error
+  }
   
   return [
     // BIGLOBE Template
