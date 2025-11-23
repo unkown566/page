@@ -636,7 +636,7 @@ export default function SettingsPage() {
                     <label className="flex items-center gap-3">
                       <input
                         type="checkbox"
-                        checked={settings.security.captcha.enabled}
+                        checked={settings.security.captcha.enabled ?? false}
                         onChange={(e) => updateSetting('security.captcha.enabled', e.target.checked)}
                         className="w-5 h-5 rounded border-gray-300 dark:border-gray-600"
                       />
