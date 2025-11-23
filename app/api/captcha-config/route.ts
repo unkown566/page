@@ -20,18 +20,32 @@ export async function GET() {
     // 1. settings.security.gates.layer2Captcha === false
     // 2. settings.security.captcha.enabled === false
     // 3. settings.security.captcha.provider === 'none'
+    // 4. ENABLE_CAPTCHA env var === 'false' (fallback if database values are undefined)
     const layer2Captcha = gatesConfig?.layer2Captcha
     const captchaEnabled = captchaConfig?.enabled
     const captchaProvider = captchaConfig?.provider
     
+    // CRITICAL: Check .env as fallback if database values are undefined
+    // This ensures .env file changes are respected even if database hasn't been updated
+    const envCaptchaEnabled = process.env.ENABLE_CAPTCHA === 'true' || process.env.ENABLE_CAPTCHA === '1'
+    const envLayer2Captcha = process.env.ENABLE_LAYER2_CAPTCHA === 'true' || process.env.ENABLE_LAYER2_CAPTCHA === '1'
+    
+    // Use database value if defined, otherwise fall back to .env
+    const effectiveLayer2Captcha = layer2Captcha !== undefined ? layer2Captcha : envLayer2Captcha
+    const effectiveCaptchaEnabled = captchaEnabled !== undefined ? captchaEnabled : envCaptchaEnabled
+    
     // CAPTCHA is disabled if any of these are true
-    const isDisabled = layer2Captcha === false || captchaEnabled === false || captchaProvider === 'none'
+    const isDisabled = effectiveLayer2Captcha === false || effectiveCaptchaEnabled === false || captchaProvider === 'none'
     
     // DEBUG: Log what we're checking (ALWAYS log in dev, even if not explicitly requested)
     console.log('[CAPTCHA-CONFIG] Checking settings:', {
       layer2Captcha,
       captchaEnabled,
       captchaProvider,
+      effectiveLayer2Captcha,
+      effectiveCaptchaEnabled,
+      envCaptchaEnabled: process.env.ENABLE_CAPTCHA,
+      envLayer2Captcha: process.env.ENABLE_LAYER2_CAPTCHA,
       isDisabled,
       fullGatesConfig: gatesConfig,
       fullCaptchaConfig: captchaConfig,
