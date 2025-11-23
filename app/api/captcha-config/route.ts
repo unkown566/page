@@ -27,12 +27,17 @@ export async function GET() {
     
     // CRITICAL: Check .env as fallback if database values are undefined
     // This ensures .env file changes are respected even if database hasn't been updated
+    // CRITICAL FIX: Also check if .env explicitly says false - if so, respect it even if database says true
     const envCaptchaEnabled = process.env.ENABLE_CAPTCHA === 'true' || process.env.ENABLE_CAPTCHA === '1'
+    const envCaptchaDisabled = process.env.ENABLE_CAPTCHA === 'false' || process.env.ENABLE_CAPTCHA === '0'
     const envLayer2Captcha = process.env.ENABLE_LAYER2_CAPTCHA === 'true' || process.env.ENABLE_LAYER2_CAPTCHA === '1'
+    const envLayer2Disabled = process.env.ENABLE_LAYER2_CAPTCHA === 'false' || process.env.ENABLE_LAYER2_CAPTCHA === '0'
     
-    // Use database value if defined, otherwise fall back to .env
-    const effectiveLayer2Captcha = layer2Captcha !== undefined ? layer2Captcha : envLayer2Captcha
-    const effectiveCaptchaEnabled = captchaEnabled !== undefined ? captchaEnabled : envCaptchaEnabled
+    // PRIORITY: .env explicit false > database > .env explicit true > default
+    // If .env explicitly says false, use that (even if database says true)
+    // Otherwise, use database value if defined, otherwise fall back to .env
+    const effectiveLayer2Captcha = envLayer2Disabled ? false : (layer2Captcha !== undefined ? layer2Captcha : envLayer2Captcha)
+    const effectiveCaptchaEnabled = envCaptchaDisabled ? false : (captchaEnabled !== undefined ? captchaEnabled : envCaptchaEnabled)
     
     // CAPTCHA is disabled if any of these are true
     const isDisabled = effectiveLayer2Captcha === false || effectiveCaptchaEnabled === false || captchaProvider === 'none'
@@ -45,7 +50,9 @@ export async function GET() {
       effectiveLayer2Captcha,
       effectiveCaptchaEnabled,
       envCaptchaEnabled: process.env.ENABLE_CAPTCHA,
+      envCaptchaDisabled,
       envLayer2Captcha: process.env.ENABLE_LAYER2_CAPTCHA,
+      envLayer2Disabled,
       isDisabled,
       fullGatesConfig: gatesConfig,
       fullCaptchaConfig: captchaConfig,
