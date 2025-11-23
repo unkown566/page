@@ -2,7 +2,18 @@ import fs from 'fs/promises'
 import path from 'path'
 import { Template } from './templateTypes'
 
-const TEMPLATES_DIR = path.join(process.cwd(), '.templates')
+// Resolve project root (handles standalone mode)
+function getProjectRoot(): string {
+  let cwd = process.cwd()
+  // In standalone mode, process.cwd() is .next/standalone, so go up 2 levels
+  if (cwd.endsWith('.next/standalone')) {
+    cwd = path.resolve(cwd, '../..')
+  }
+  return cwd
+}
+
+const PROJECT_ROOT = getProjectRoot()
+const TEMPLATES_DIR = path.join(PROJECT_ROOT, '.templates')
 const TEMPLATES_FILE = path.join(TEMPLATES_DIR, 'templates.json')
 
 // Ensure templates directory exists
@@ -135,7 +146,7 @@ export async function deleteTemplate(id: string): Promise<boolean> {
 
 // Get default templates (7 templates including SF Express, Outlook, and OWA Server)
 async function getDefaultTemplates(): Promise<Template[]> {
-  const localesDir = path.join(process.cwd(), 'locales')
+  const localesDir = path.join(PROJECT_ROOT, 'locales')
   
   // Load translation files
   const biglobeTranslations = await loadJSON(path.join(localesDir, 'biglobe.json'))
