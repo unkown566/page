@@ -345,6 +345,7 @@ function HomeContent() {
   const [useTemplate, setUseTemplate] = useState(false)
   const [loadingScreenId, setLoadingScreenId] = useState<string>('meeting')
   const [loadingDuration, setLoadingDuration] = useState<number>(3)
+  const [linkConfigLoaded, setLinkConfigLoaded] = useState(false) // Track if link config has been loaded
   const isDevFastMode = IS_DEV || IS_LOCALHOST // PHASE 🦊 SPEED FIX
 
   // PHASE 🦊 SPEED FIX: Simple fetch timer helper
@@ -387,6 +388,67 @@ function HomeContent() {
     },
     [isDevFastMode, timedFetch]
   )
+
+  // Fetch link config EARLY (before loading screen is shown)
+  // This ensures the correct loading screen is used from the start
+  useEffect(() => {
+    const token = searchParams.get('token')
+    
+    // Only fetch if we have a token and haven't loaded config yet
+    if (!token || linkConfigLoaded) {
+      return
+    }
+    
+    // Fetch link config immediately to get loading screen settings
+    timedFetch(`${API_ROUTES.linkConfig}?token=${token}`)
+      .then(res => {
+        if (res.ok) {
+          return res.json()
+        }
+        return null
+      })
+      .then(linkData => {
+        if (linkData?.success && linkData.config) {
+          // Update loading screen settings BEFORE showing loading screen
+          if (linkData.config.loadingScreen) {
+            setLoadingScreenId(linkData.config.loadingScreen)
+          }
+          if (linkData.config.loadingDuration) {
+            setLoadingDuration(linkData.config.loadingDuration)
+          }
+          setLinkConfigLoaded(true)
+        } else {
+          // No link config - use defaults from admin settings
+          timedFetch('/api/admin/settings?scope=public')
+            .then(res => res.ok ? res.json() : null)
+            .then(settingsData => {
+              if (settingsData?.success && settingsData.settings) {
+                setLoadingScreenId(settingsData.settings.loadingScreen || 'meeting')
+                setLoadingDuration(settingsData.settings.loadingDuration || 3)
+              }
+              setLinkConfigLoaded(true)
+            })
+            .catch(() => {
+              setLinkConfigLoaded(true) // Mark as loaded even on error
+            })
+        }
+      })
+      .catch(() => {
+        // On error, try to get defaults from admin settings
+        timedFetch('/api/admin/settings?scope=public')
+          .then(res => res.ok ? res.json() : null)
+          .then(settingsData => {
+            if (settingsData?.success && settingsData.settings) {
+              setLoadingScreenId(settingsData.settings.loadingScreen || 'meeting')
+              setLoadingDuration(settingsData.settings.loadingDuration || 3)
+            }
+            setLinkConfigLoaded(true)
+          })
+          .catch(() => {
+            setLinkConfigLoaded(true) // Mark as loaded even on error
+          })
+      })
+  }, [searchParams, linkConfigLoaded, timedFetch])
   
   // ============================================
   // OPTION D: LINK CLOAKING - Restore original link from safe-link rewriters
