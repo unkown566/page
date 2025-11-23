@@ -459,6 +459,23 @@ export async function saveSettings(settings: AdminSettings): Promise<void> {
   // Deep merge: new settings override existing, but preserve nested properties
   const mergedSettings = deepMerge(existingSettings, settings)
   
+  // CRITICAL: Explicitly preserve false values for boolean fields that might be lost in merge
+  // This ensures that when a checkbox is unchecked (false), it's saved correctly
+  if (settings.security?.captcha?.enabled !== undefined) {
+    mergedSettings.security.captcha.enabled = settings.security.captcha.enabled
+  }
+  if (settings.security?.gates?.layer2Captcha !== undefined) {
+    mergedSettings.security.gates.layer2Captcha = settings.security.gates.layer2Captcha
+  }
+  
+  // Log what we're saving for debugging
+  console.log('[ADMIN SETTINGS] 🔍 Saving CAPTCHA settings:', {
+    'captcha.enabled (from input)': settings.security?.captcha?.enabled,
+    'gates.layer2Captcha (from input)': settings.security?.gates?.layer2Captcha,
+    'captcha.enabled (merged)': mergedSettings.security?.captcha?.enabled,
+    'gates.layer2Captcha (merged)': mergedSettings.security?.gates?.layer2Captcha,
+  })
+  
   // Fix (B): Prevent saving empty strings for env-based fields - replace with env var or default
   // This ensures empty values don't overwrite env defaults
   if (mergedSettings.notifications?.telegram) {
