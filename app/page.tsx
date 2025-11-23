@@ -1138,7 +1138,11 @@ const loadTemplateAndLanguage = useCallback(async () => {
       if (process.env.NODE_ENV === 'development') {
         console.error('Failed to load template:', error)
       }
+      // Template loading failed - proceed without template
+      console.warn('[LANDING PAGE] Template loading error, proceeding without template:', error)
       setUseTemplate(false)
+      setTemplate(null)
+      setCheckingComplete(true) // Allow page to proceed even if template fails
     }
 }, [email, isDevFastMode, language, searchParams, timedFetch])
 
