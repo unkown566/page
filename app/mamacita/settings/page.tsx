@@ -133,6 +133,23 @@ export default function SettingsPage() {
       position: 'top-right'
     })
 
+    // CRITICAL: Ensure boolean values are explicitly set (not undefined)
+    // This prevents false values from being lost during save
+    const settingsToSave = JSON.parse(JSON.stringify(settings))
+    
+    // Explicitly ensure captcha.enabled and gates.layer2Captcha are booleans
+    if (settingsToSave.security?.captcha) {
+      settingsToSave.security.captcha.enabled = settingsToSave.security.captcha.enabled ?? false
+    }
+    if (settingsToSave.security?.gates) {
+      settingsToSave.security.gates.layer2Captcha = settingsToSave.security.gates.layer2Captcha ?? false
+    }
+    
+    console.log('[SETTINGS PAGE] Saving with explicit values:', {
+      'captcha.enabled': settingsToSave.security?.captcha?.enabled,
+      'gates.layer2Captcha': settingsToSave.security?.gates?.layer2Captcha,
+    })
+
     try {
       const response = await fetch('/api/admin/settings', {
         method: 'POST',
@@ -140,7 +157,7 @@ export default function SettingsPage() {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken
         },
-        body: JSON.stringify({ settings }),
+        body: JSON.stringify({ settings: settingsToSave }),
       })
 
       // Handle 401 (session expired)
