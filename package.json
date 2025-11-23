@@ -4,13 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build",
-    "build:secure": "NODE_ENV=production DISABLE_DEV_FAST=true next build",
+    "build": "next build && node scripts/post-build.js",
+    "build:secure": "NODE_ENV=production DISABLE_DEV_FAST=true next build && node scripts/post-build.js",
     "start": "next start",
     "lint": "next lint",
     "verify-security": "tsx scripts/verify-file-security.ts",
     "migrate-captures": "tsx scripts/migrate-captures-to-visitors.ts",
-    "test-geo": "tsx scripts/test-geo.ts"
+    "test-geo": "tsx scripts/test-geo.ts",
+    "postbuild": "node scripts/post-build.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",
