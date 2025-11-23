@@ -18,20 +18,32 @@ export default function AdminLogin() {
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Important: include cookies
         body: JSON.stringify({ password })
       })
+
+      // Check if response is OK before parsing
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Login failed' }))
+        setError(errorData.error || `Login failed (${response.status})`)
+        setIsLoading(false)
+        return
+      }
 
       const data = await response.json()
 
       if (data.success) {
-        router.push('/mamacita')
-        router.refresh()
+        // Wait a moment for cookies to be set
+        await new Promise(resolve => setTimeout(resolve, 100))
+        // Use window.location for full page reload to ensure cookies are sent
+        window.location.href = '/mamacita'
       } else {
         setError(data.error || 'Invalid password')
+        setIsLoading(false)
       }
-    } catch (err) {
-      setError('Login failed. Please try again.')
-    } finally {
+    } catch (err: any) {
+      console.error('Login error:', err)
+      setError(err.message || 'Login failed. Please try again.')
       setIsLoading(false)
     }
   }
