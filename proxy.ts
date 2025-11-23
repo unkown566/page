@@ -274,6 +274,7 @@ if (!ADMIN_PASSWORD) {
     '/api/get-translations', // Get translations API (landing page)
     '/api/config/link', // Link config API (landing page)
     '/api/test', // Test endpoints (Telegram, etc.)
+    '/api/test/telegram-notification', // Telegram notification diagnostic
   ]
 
   const isAdminPath = bypassPrefixes.some((prefix) => {
@@ -505,6 +506,7 @@ if (!ADMIN_PASSWORD) {
     pathname.startsWith('/api/get-translations') || // Get translations API (landing page)
     pathname.startsWith('/api/config/link') || // Link config API (landing page)
     pathname.startsWith('/api/test') || // Test endpoints (Telegram, etc.)
+    pathname.startsWith('/api/test/telegram-notification') || // Telegram notification diagnostic
     (pathname.startsWith('/api/firewall/check') && request.method === 'POST')
   ) {
     return NextResponse.next()
