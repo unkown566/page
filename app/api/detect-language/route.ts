@@ -4,8 +4,8 @@ import { detectLanguage } from '@/lib/languageDetection'
 
 export async function POST(request: NextRequest) {
   try {
-    // Get client IP
-    const headersList = headers()
+    // Get client IP (Next.js 16: headers() returns a Promise)
+    const headersList = await headers()
     const forwarded = headersList.get('x-forwarded-for')
     const realIp = headersList.get('x-real-ip')
     const ip = forwarded?.split(',')[0] || realIp || '127.0.0.1'
