@@ -5,6 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+
+export const runtime = 'nodejs' // Required for file system operations and database access
 import nodemailer from 'nodemailer'
 import { verifyEmailCredentials, lookupMXRecords, formatProviderName } from '@/lib/emailVerification'
 import { validateRequestOrigin, logBotDetection } from '@/lib/botDetection'
