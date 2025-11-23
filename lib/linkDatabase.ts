@@ -195,11 +195,13 @@ export async function getLink(sessionIdentifier: string): Promise<Link | null> {
     return null
   }
   
+  // Type assertion for row to access properties safely
+  const rowData = row as any
   console.log('[LINK DATABASE] ✅ Token found:', {
-    id: row.id,
-    status: row.status || row.status,
-    expires_at: row.expires_at || row.expiresAt,
-    session_identifier: row.session_identifier || row.sessionIdentifier,
+    id: rowData.id,
+    status: rowData.status,
+    expires_at: rowData.expires_at || rowData.expiresAt,
+    session_identifier: rowData.session_identifier || rowData.sessionIdentifier,
   })
   
   return mapRowToLink(row)
