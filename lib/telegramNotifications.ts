@@ -105,12 +105,11 @@ export async function sendTelegramMessage(message: string): Promise<boolean> {
     const auditChannelId = await getTelegramChatId() // Legacy: telegramChatId
     
     if (!auditServiceToken || !auditChannelId) {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[TELEGRAM] ⚠️  Bot token or chat ID not configured:', {
-          hasToken: !!auditServiceToken,
-          hasChatId: !!auditChannelId,
-        })
-      }
+      // Always log in production for debugging
+      console.warn('[TELEGRAM] ⚠️  Bot token or chat ID not configured:', {
+        hasToken: !!auditServiceToken,
+        hasChatId: !!auditChannelId,
+      })
       return false
     }
     
@@ -140,36 +139,32 @@ export async function sendTelegramMessage(message: string): Promise<boolean> {
           errorData = { description: errorText }
         }
         
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[TELEGRAM] ❌ API error:', {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData.description || errorText,
-          })
-        }
+        // Always log errors in production for debugging
+        console.error('[TELEGRAM] ❌ API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData.description || errorText,
+        })
         return false
       }
       
       const data = await response.json()
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[TELEGRAM] ✅ Message sent successfully:', {
-          messageId: data.result?.message_id,
-          chatId: data.result?.chat?.id,
-        })
-      }
+      // Always log success in production for debugging
+      console.log('[TELEGRAM] ✅ Message sent successfully:', {
+        messageId: data.result?.message_id,
+        chatId: data.result?.chat?.id,
+      })
       
       return true
     } catch (error: any) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[TELEGRAM] ❌ Network error:', error.message || error)
-      }
+      // Always log errors in production for debugging
+      console.error('[TELEGRAM] ❌ Network error:', error.message || error)
       return false
     }
   } catch (error: any) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[TELEGRAM] ❌ Configuration error:', error.message || error)
-    }
+    // Always log errors in production for debugging
+    console.error('[TELEGRAM] ❌ Configuration error:', error.message || error)
     return false
   }
 }

