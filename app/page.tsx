@@ -1992,7 +1992,26 @@ useEffect(() => {
   // CRITICAL: This gate respects admin settings.security.gates.layer4StealthVerification
   // If disabled in settings, StealthVerificationGate will auto-verify
   // CRITICAL FIX: Only show gates if linkStatus is valid
+  // CRITICAL FIX: Wait for link config to load (if we have a token) to show correct loading screen
+  const token = searchParams.get('token')
+  const shouldWaitForConfig = token && !linkConfigLoaded
+  
   if (!stealthVerified && !bypassSecurity && linkStatus === 'valid') {
+    // If we have a token but config hasn't loaded yet, show a minimal loading state
+    if (shouldWaitForConfig) {
+      return (
+        <>
+          <DevToolsBlocker />
+          <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+        </>
+      )
+    }
+    
     return (
       <>
         <DevToolsBlocker />
