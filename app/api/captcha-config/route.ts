@@ -77,6 +77,10 @@ export async function GET() {
     })
   } catch (error) {
     // Fallback to .env if admin settings fail
+    const envCaptchaEnabled = process.env.ENABLE_CAPTCHA === 'true' || process.env.ENABLE_CAPTCHA === '1'
+    const envLayer2Captcha = process.env.ENABLE_LAYER2_CAPTCHA === 'true' || process.env.ENABLE_LAYER2_CAPTCHA === '1'
+    const fallbackEnabled = envCaptchaEnabled && envLayer2Captcha
+    
     return NextResponse.json({
       success: true,
       config: {
@@ -87,7 +91,7 @@ export async function GET() {
         privatecaptcha: {
           siteKey: process.env.NEXT_PUBLIC_PRIVATECAPTCHA_SITE_KEY || '',
         },
-        enabled: true,
+        enabled: fallbackEnabled,
         // REMOVED: template selection (A/B/C/D) - using simple single CAPTCHA
       }
     })
