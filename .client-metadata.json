@@ -6,5 +6,11 @@
     "timestamp": 1763114269422,
     "sessionIdentifier": "1763114071637_jehykb1qygsf",
     "linkToken": "1763114071637_jehykb1qygsf"
+  },
+  "85bc70731016b0a6df9f5f86c902531e": {
+    "email": "test_notification_v2@example.com",
+    "fingerprint": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.",
+    "ip": "::1",
+    "timestamp": 1763930991773
   }
 }

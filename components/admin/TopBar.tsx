@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Bell, Search, User, LogOut } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface TopBarProps {
@@ -12,30 +12,7 @@ interface TopBarProps {
 export default function TopBar({ sidebarCollapsed }: TopBarProps) {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const [notifications, setNotifications] = useState<any[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
   const router = useRouter()
-
-  // Fetch notifications
-  const fetchNotifications = async () => {
-    try {
-      const res = await fetch('/api/admin/notifications')
-      if (res.ok) {
-        const data = await res.json()
-        setNotifications(data.notifications || [])
-        setUnreadCount(data.notifications?.length || 0)
-      }
-    } catch (error) {
-      console.error('Failed to fetch notifications', error)
-    }
-  }
-
-  // Poll for notifications every 30 seconds
-  useEffect(() => {
-    fetchNotifications()
-    const interval = setInterval(fetchNotifications, 30000)
-    return () => clearInterval(interval)
-  }, [])
 
   const handleLogout = async () => {
     try {
@@ -82,31 +59,18 @@ export default function TopBar({ sidebarCollapsed }: TopBarProps) {
               aria-label="Notifications"
             >
               <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-              )}
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
 
             {notificationsOpen && (
               <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
-                <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="font-semibold text-gray-900 dark:text-white">Notifications</h3>
-                  <span className="text-xs text-gray-500">{unreadCount} new</span>
                 </div>
                 <div className="max-h-96 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                      No new notifications
-                    </div>
-                  ) : (
-                    notifications.map((notif) => (
-                      <div key={notif.id} className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{notif.title}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{notif.message}</p>
-                        <p className="text-xs text-gray-400 mt-1">{new Date(notif.timestamp).toLocaleString()}</p>
-                      </div>
-                    ))
-                  )}
+                  <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                    No new notifications
+                  </div>
                 </div>
               </div>
             )}
